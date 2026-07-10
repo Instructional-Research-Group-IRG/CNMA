@@ -14,45 +14,23 @@
   pacman::p_load(metafor, googlesheets4, dplyr, tidyr, skimr, testit, assertable, meta, netmeta, stringr, janitor, naniar, igraph, multcomp, broom, gridExtra, ggplot2, writexl, readr, grid, gridExtra, cowplot, extrafont)
   
   # Load (read) data (i.e., copy data to 'dat')
-  #dat <- read_sheet("https://docs.google.com/spreadsheets/d/1bWugw06yFyetIVYlhAHHzM_d3KGhegxxLBm-5463j2Q/edit#gid=0") #Test data
-  #NNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1cv5ftm6-XV28pZ_mN43K7HH3C7WhsPMnPsB1HDuRLE4/edit#gid=0") #Full data set
-  NNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1ayNoKwbxnUVa1XspqAWpS2YBFIwApvS5t3lld5Kx2VA/edit?gid=0#gid=0", sheet="Master Database") # <<Copy of NNMA Master Database - March 17, 11:18 AM>>; The master database changed after submission of publication in late March 2025. This recovered older version from 3/17/25 reproduces the results reported in the publication.
+  CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWVNLx1uksOu4QQlf2Xo7p4SZahPMio/edit?gid=931222966#gid=931222966&fvid=1356828720", sheet="Master Database") # <<CNMA master database>>
   
   ## Explore data  
-  NNMA_Data %>% count() 
-  head(NNMA_Data)
-  skim(NNMA_Data)
-  NNMA_Data$contrast_id <- as.character(NNMA_Data$contrast_id)
-  NNMA_Data %>% count(record_id, contrast_id) %>% print(n= Inf)
-  NNMA_Data %>% count(domain, measure_name) %>% print(n= Inf)
+  CNMA_Data %>% count() 
+  head(CNMA_Data)
+  skim(CNMA_Data)
+  CNMA_Data$contrast_id <- as.character(CNMA_Data$contrast_id)
+  CNMA_Data %>% count(study_id, contrast_id) %>% print(n= Inf)
+  CNMA_Data %>% count(domain, measure_name) %>% print(n= Inf)
   
   ## Check ratings
-  NNMA_Data %>% group_by(wwc_rating) %>% count() %>% ungroup()
-  NNMA_Data %>% group_by(domain, wwc_rating) %>% count() %>% ungroup() %>% print(n= Inf)
-  
-# Subset data following NMA analysis specifications
-  
-  ## Tabulate variables upon which to subset data
-  tabyl(NNMA_Data$aggregated)
-  tabyl(NNMA_Data$measure_type)
-  tabyl(NNMA_Data$wwc_rating)  
-  tabyl(NNMA_Data$intervention_prelim)    
-  tabyl(NNMA_Data$comparison_prelim) 
-  
-  ## Subset data for analysis 
-  NMA_data_analysis_subset <- subset(NNMA_Data, (measure_type=="Main" | measure_type=="Follow Up (10-14 Days)") & aggregated=="IN" & (wwc_rating=="MWOR" | wwc_rating=="MWR") & (TvsT==1 | TvsT==0))
-  NMA_data_analysis_subset %>% count()
-  
-  ## Retabulate variables upon which to subset data to verify correct subset
-  tabyl(NMA_data_analysis_subset$aggregated)
-  tabyl(NMA_data_analysis_subset$measure_type)
-  tabyl(NMA_data_analysis_subset$wwc_rating)  
-  tabyl(NMA_data_analysis_subset$intervention_prelim)    
-  tabyl(NMA_data_analysis_subset$comparison_prelim)
+  CNMA_Data %>% group_by(wwc_rating) %>% count() %>% ungroup()
+  CNMA_Data %>% group_by(domain, wwc_rating) %>% count() %>% ungroup() %>% print(n= Inf)
   
   ## Check for full duplicates
-  dups <- anyDuplicated(NMA_data_analysis_subset)
-  assert("assert no duplicate entries", dups == 0) #No full duplicates. Data already in wide format.
+  dups <- anyDuplicated(CNMA_Data)
+  assert("assert no duplicate entries", dups == 0) #No full duplicates.
   
 # Create unique group ID for each independent group of students included in either assignment group of the study-contrasts
   
