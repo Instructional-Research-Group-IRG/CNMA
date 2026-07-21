@@ -1,4 +1,4 @@
-# This script performs a component network meta-analysis (cNMA) of mathematics education interventions using outcomes in the whole and ration numbers domains (of the NNMA database used for the original NMA). 
+# This script performs a component network meta-analysis (cNMA) of mathematics education interventions using outcomes in the whole and ration numbers domains. 
 # Sample: all nodes
 # Variable for defining outcome domain: intervention_content
 # Disaggregated by domain: Yes
@@ -31,6 +31,25 @@
   ## Check for full duplicates
   dups <- anyDuplicated(CNMA_Data)
   assert("assert no duplicate entries", dups == 0) #No full duplicates.
+  
+  ## Check key columns/variables
+  
+    ### Domain
+    class(CNMA_Data$intervention_content)
+    tabyl(CNMA_Data$intervention_content)
+    
+    ### Sample sizes
+    CNMA_Data %>% count(intervention_n,comparison_n,full_sample_size) %>% print(n = Inf)
+    
+    ### Statistics
+    class(CNMA_Data$effect_size)
+    tabyl(CNMA_Data$effect_size)    
+    
+    class(CNMA_Data$standard_error)
+    tabyl(CNMA_Data$standard_error)     
+    
+    ### Components
+    
   
 # Create unique group ID for each independent group of students included in either assignment group of the study-contrasts
   
