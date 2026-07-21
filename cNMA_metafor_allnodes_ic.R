@@ -6,15 +6,15 @@
 # Load required packages
 
   ## Install 'devel' version of metafor package
-  ##install.packages("remotes") 
-  ##remotes::install_github("wviechtb/metafor") 
+  #install.packages("remotes") 
+  #remotes::install_github("wviechtb/metafor") 
   
   ## Install and load other required packages
-  ##install.packages("pacman") 
+  #install.packages("pacman") 
   pacman::p_load(metafor, googlesheets4, dplyr, tidyr, skimr, testit, assertable, meta, netmeta, stringr, janitor, naniar, igraph, multcomp, broom, gridExtra, ggplot2, writexl, readr, grid, gridExtra, cowplot, extrafont)
   
-  # Load (read) data (i.e., copy data to 'dat')
-  CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWVNLx1uksOu4QQlf2Xo7p4SZahPMio/edit?gid=931222966#gid=931222966&fvid=1356828720", sheet="Master Database") # <<CNMA master database>>
+# Load (read) data (i.e., copy data to 'dat')
+CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWVNLx1uksOu4QQlf2Xo7p4SZahPMio/edit?gid=931222966#gid=931222966&fvid=1356828720", sheet="Master Database") # <<CNMA master database>>
   
   ## Explore data  
   CNMA_Data %>% count() 
@@ -34,194 +34,142 @@
   
   ## Check key columns/variables
   
-    ### Domain
-    class(CNMA_Data$intervention_content)
-    tabyl(CNMA_Data$intervention_content)
+    inspect_categorical <- function(data, column) {
+      col <- dplyr::pull(data, {{ column }})
+      print(class(col))
+      janitor::tabyl(col)
+    }
     
+    inspect_continuous <- function(data, column) {
+      data %>%
+        summarise(
+          n_missing = sum(is.na({{ column }})),
+          n_nonmissing = sum(!is.na({{ column }})),
+          min  = min({{ column }}, na.rm = TRUE),
+          max  = max({{ column }}, na.rm = TRUE),
+          mean = mean({{ column }}, na.rm = TRUE)
+        )
+    }
+      
+    ### Domain
+    inspect_categorical(CNMA_Data, intervention_content)
+
     ### Sample sizes
     CNMA_Data %>% count(intervention_n,comparison_n,full_sample_size) %>% print(n = Inf)
     
     ### Statistics
-    class(CNMA_Data$effect_size)
-    tabyl(CNMA_Data$effect_size)    
-    
-    class(CNMA_Data$standard_error)
-    tabyl(CNMA_Data$standard_error)     
+    inspect_continuous(CNMA_Data, effect_size)
+    inspect_continuous(CNMA_Data, standard_error)
     
     ### Components
     
-  
-# Create unique group ID for each independent group of students included in either assignment group of the study-contrasts
-  
-  ## Keep only record ID, intervention/comparison bundle, intervention/comparison sample size 
-  NMA_data_grpID <- NMA_data_analysis_subset %>% dplyr::select(record_id, intervention = intervention_prelim, comparison = comparison_prelim, intervention_n, comparison_n)
-  str(NMA_data_grpID)
-  
-  ## For each assignment group, combine component bundle and sample size into a single character variable to distinguish groups with the same sample sizes but different component bundles. 
-  ## In such cases, these are presumably two unique groups of individuals because they received different component bundles despite happening to have the same sample sizes. 
-  ## There may be no cases within the same record ID in which two different component bundles happen to have the same group sample sizes but let's control for that just in case.
-  str(NMA_data_grpID)
-  NMA_data_grpID <- NMA_data_grpID %>% mutate(intervention_n_chr = as.character(intervention_n))
-  NMA_data_grpID <- NMA_data_grpID %>% unite("int_n_chr_bundle" , c(intervention, intervention_n_chr), remove = FALSE)
-  NMA_data_grpID <- NMA_data_grpID %>% mutate(comparison_n_chr = as.character(comparison_n))
-  NMA_data_grpID <- NMA_data_grpID %>% unite("com_n_chr_bundle" , c(comparison, comparison_n_chr), remove = FALSE)
-  str(NMA_data_grpID)
-  NMA_data_grpID
-  
-  NMA_data_grpID <- NMA_data_grpID %>% dplyr::select(record_id, int_n_chr_bundle, com_n_chr_bundle)
-  NMA_data_grpID
-  
-  ## Reshape long so that total number of unique groups within each record ID can be counted and assigned a unique group ID 
-  NMA_data_grpID_long <- NMA_data_grpID %>% pivot_longer(-record_id, names_to="assignment", values_to="bundle_samplesize")
-  NMA_data_grpID_long
-  
-  ## Keep only unique combinations of assignment bundle + group sample size within record ID so that unique group IDs can be assigned.
-  ## Do this regardless of intervention/comparison group assignment because the same combination of bundle + sample size presumably should be considered one unique group regardless of group assignment.
-  ## For example, one combination of bundle + sample size could have been assigned to intervention for one contrast but to comparison for another contrast of the same record ID. 
-  ## In this case, this would be the same unique group of individuals in both contrasts despite the different group assignments and therefore should have the same group ID (not two different ones) to capture all dependencies.
-  ## There may be no cases of this in the data but let's control for it just in case by removing bundle + group sample size duplicates within each study regardless of group assignment.
-  NMA_data_grpID_long_unique <- NMA_data_grpID_long %>% group_by(record_id) %>% distinct(bundle_samplesize, .keep_all = TRUE) %>% dplyr::select(-assignment) %>% ungroup()
-  NMA_data_grpID_long_unique
-  
-  ## Create unique group ID for each combination of bundle + sample size, by record ID (study)
-  NMA_data_grpID_long_unique_withids <- NMA_data_grpID_long_unique %>% group_by(record_id) %>% mutate(group_id=row_number()) %>% ungroup()
-  NMA_data_grpID_long_unique_withids
-  
-  ## Merge group IDs onto main data set
-  ## Note that above, we created {NMA_data_grpID_long_unique_withids} which is effectively a master list of the group IDs in which each group ID is a unique combination of bundle + sample size within each record ID 
-  ##   regardless of group assignment.
-  ## The main data set has intervention and comparison groups in separate columns. But because the master group ID list is agnostic to group assignment, we can use it to merge on group IDs to both intervention and comparison 
-  ##   groups in the following two steps:
-  ##     i) once for the intervention groups; then ii) a second time for the comparison groups. 
-  ## If our logic and subsequent group ID coding above are correct, the result should be each intervention and comparison group receiving a unique group ID (i.e., there should be no missing group ID values after the merges); 
-  ##   AND there should be no intervention and comparison groups of the same contrast (i.e., within the same row) with the same group ID.
-  ## However, as noted above, the same group (i.e., the same bundle + sample size combination) in different contrasts (roRS) of the same record ID should receive the same group ID regardless of their group assignment 
-  ##   across those contrasts because they are the same unique group of individuals, otherwise we do not capture all dependencies.
-  
-  ## Merge unique group IDs onto the intervention groups
-  NMA_data_grpID_long_unique_withids_Imerge <- NMA_data_grpID_long_unique_withids %>% separate(bundle_samplesize, c("intervention_prelim","intervention_n"), "_")
-  NMA_data_grpID_long_unique_withids_Imerge
-  NMA_data_grpID_long_unique_withids_Imerge$intervention_n <- as.numeric(NMA_data_grpID_long_unique_withids_Imerge$intervention_n)
-  NMA_data_grpID_long_unique_withids_Imerge <- NMA_data_grpID_long_unique_withids_Imerge %>% rename(group1_id = group_id)
-  str(NMA_data_grpID_long_unique_withids_Imerge)
-  NMA_data_analysis_subset_chrNA <- NMA_data_analysis_subset
-  NMA_data_analysis_subset_chrNA$intervention_prelim <- NMA_data_analysis_subset$intervention_prelim %>% replace_na("NA") #This facilitates the merge below. When the IDs were created, intervention and intervention_n were combined then separated, which creates "NA" character values from the original true NA values, which don't match in a merge.
-  NMA_data_analysis_subset_grpID <- NMA_data_analysis_subset_chrNA %>% left_join(NMA_data_grpID_long_unique_withids_Imerge, by = c("record_id","intervention_prelim","intervention_n"))
-  NMA_data_analysis_subset_grpID %>% group_by(group1_id) %>% count()
-  
-  ## Merge unique group IDs onto the comparison groups  
-  NMA_data_grpID_long_unique_withids_Cmerge <- NMA_data_grpID_long_unique_withids %>% separate(bundle_samplesize, c("comparison_prelim","comparison_n"), "_")  
-  NMA_data_grpID_long_unique_withids_Cmerge
-  NMA_data_grpID_long_unique_withids_Cmerge$comparison_n <- as.numeric(NMA_data_grpID_long_unique_withids_Cmerge$comparison_n)
-  NMA_data_grpID_long_unique_withids_Cmerge <- NMA_data_grpID_long_unique_withids_Cmerge %>% rename(group2_id = group_id)
-  str(NMA_data_grpID_long_unique_withids_Cmerge)
-  NMA_data_analysis_subset_grpID$comparison_prelim <- NMA_data_analysis_subset_grpID$comparison_prelim %>% replace_na("NA") #This facilitates the merge below. When the IDs were created, intervention and intervention_n were combined then separated, which creates "NA" character values from the original true NA values, which don't match in a merge.
-  NMA_data_analysis_subset_grpID <- NMA_data_analysis_subset_grpID %>% left_join(NMA_data_grpID_long_unique_withids_Cmerge, by = c("record_id","comparison_prelim","comparison_n"))
-  NMA_data_analysis_subset_grpID %>% group_by(group2_id) %>% count()
-  
-  ## Validate merge results
-  assert_values(NMA_data_analysis_subset_grpID, colnames= c("group1_id","group2_id"), test = "not_na", test_val = NA)
-  assert_values(NMA_data_analysis_subset_grpID, colnames= "group1_id", test="not_equal", test_val= "group2_id")
-  NMA_data_analysis_subset_grpID_check <- NMA_data_analysis_subset_grpID %>% dplyr::select(record_id, contrast_id, aggregated, measure_type, measure_name, wwc_rating, intervention_prelim, intervention_n, group1_id, comparison_prelim, comparison_n, group2_id)
-  NMA_data_analysis_subset_grpID_check %>% print(n = Inf) 
-  
-  ## Restore "NA" (non-missing) values to their true <NA> (missing) values because the unite then separate functions used above changed the values from <NA> to "NA"
-  tabyl(NMA_data_analysis_subset_grpID$intervention_prelim)
-  tabyl(NMA_data_analysis_subset_grpID$comparison_prelim)
-  NMA_data_analysis_subset_grpID <- NMA_data_analysis_subset_grpID %>% replace_with_na_at(.vars = c("intervention_prelim","comparison_prelim"), condition = ~.x %in% common_na_strings)
-  tabyl(NMA_data_analysis_subset_grpID$intervention_prelim)
-  tabyl(NMA_data_analysis_subset_grpID$comparison_prelim)
-  NMA_data_analysis_subset_grpID %>% count()
+      #### Number Line- Primary or one of many
+      inspect_categorical(CNMA_Data, NL_TX) # Column AB
+      inspect_categorical(CNMA_Data, N_TX) # Column AC
+      
+      inspect_categorical(CNMA_Data, NL_COMP) # Column BY
+      inspect_categorical(CNMA_Data, N_COMP) # Column BZ
+      
+      CNMA_Data %>% count(NL_TX, N_TX, NL_COMP, N_COMP) %>% print(n = Inf)
+      
+      #### Representations- Students use or view
+      inspect_categorical(CNMA_Data, R_TX) # Column AE
+      inspect_categorical(CNMA_Data, RV_TX) # Column AF
+      
+      inspect_categorical(CNMA_Data, R_COMP) # Column CB
+      inspect_categorical(CNMA_Data, RV_COMP) # Column CC
+      
+      CNMA_Data %>% count(R_TX, RV_TX, R_COMP, RV_COMP) %>% print(n = Inf)      
+      
+      #### Student Explanations- Taught or given opportunities
+      inspect_categorical(CNMA_Data, ME_TX) # Column AH
+      inspect_categorical(CNMA_Data, VT_TX...35) # Column AI
+      
+      inspect_categorical(CNMA_Data, ME_COMP) # Column CE
+      inspect_categorical(CNMA_Data, VT_COMP...84) # Column CF
+      
+      CNMA_Data %>% count(ME_TX, VT_TX...35, ME_COMP, VT_COMP...84) %>% print(n = Inf)   
+      
+      #### Vocabulary
+      inspect_categorical(CNMA_Data, WTS_TX) # Column AK
+      inspect_categorical(CNMA_Data, VT_TX...38) # Column AL   
+      inspect_categorical(CNMA_Data, SV_TX) # Column AM   
+      
+      inspect_categorical(CNMA_Data, WTS_COMP) # Column CH
+      inspect_categorical(CNMA_Data, VT_COMP...87) # Column CI    
+      inspect_categorical(CNMA_Data, SV_COMP) # Column CJ
+      
+      CNMA_Data %>% count(WTS_TX, VT_TX...38, SV_TX, WTS_COMP, VT_COMP...87, SV_COMP) %>% print(n = Inf)
+      
+      #### Fluency- Feedback, goals, content, count of activities
+      inspect_categorical(CNMA_Data, FF_TX) # Column AO
+      inspect_categorical(CNMA_Data, FO_TX) # Column AP   
 
+      inspect_categorical(CNMA_Data, FF_COMP) # Column CL
+      inspect_categorical(CNMA_Data, FO_COMP) # Column CM  
+      
+      CNMA_Data %>% count(FF_TX, FO_TX, FF_COMP, FO_COMP) %>% print(n = Inf)
+      
+      #### Positive Reinforcement- Math or Behavior (Bx)
+      inspect_categorical(CNMA_Data, BR_TX) # Column BJ
+      inspect_categorical(CNMA_Data, MR_TX) # Column BK   
+      inspect_categorical(CNMA_Data, PREXTRA_TX) # Column BL
+      inspect_categorical(CNMA_Data, BX_TX) # Column BM   
+      
+      inspect_categorical(CNMA_Data, BR_COMP) # Column DG
+      inspect_categorical(CNMA_Data, MR_COMP) # Column DH  
+      inspect_categorical(CNMA_Data, PREXTRA_COMP) # Column DI
+      inspect_categorical(CNMA_Data, BX_COMP) # Column DJ 
+      
+      CNMA_Data %>% count(BR_TX, MR_TX, PREXTRA_TX, BX_TX) %>% print(n = Inf)
+      
+      #### Worked Examples
+      inspect_categorical(CNMA_Data, WXA_TX) # Column BO
+      inspect_categorical(CNMA_Data, WXP_TX) # Column BP   
+      
+      inspect_categorical(CNMA_Data, WXA_TX) # Column DL
+      inspect_categorical(CNMA_Data, WXP_TX) # Column DM  
+      
+      CNMA_Data %>% count(FF_TX, FO_TX, FF_COMP, FO_COMP) %>% print(n = Inf)      
+      
+      #### Strategy Instruction-  multi step strategy or basic fact strategy taught
+      CNMA_Data <- CNMA_Data %>% rename(WP2_TX = `2_WPS_word problem specific [strategy]`)
+      
+      inspect_categorical(CNMA_Data, MS2_TX) # Column BR
+      inspect_categorical(CNMA_Data, WPS_TX) # Column BS   
+      inspect_categorical(CNMA_Data, WP2_TX) # Column BT
+      inspect_categorical(CNMA_Data, MS_TX) # Column BU
+      inspect_categorical(CNMA_Data, BFS_TX) # Column BV   
+      
+      inspect_categorical(CNMA_Data, MS2_COMP) # Column DO
+      inspect_categorical(CNMA_Data, WPS_COMP) # Column DP  
+      inspect_categorical(CNMA_Data, WP2_COMP) # Column DQ
+      inspect_categorical(CNMA_Data, MS_COMP) # Column DR
+      inspect_categorical(CNMA_Data, BFS_COMP) # Column DS 
+      
+      CNMA_Data %>% count(MS2_TX, WPS_TX, WP2_TX, MS_TX, BFS_TX, MS2_COMP, WPS_COMP, WP2_COMP, MS_COMP, BFS_COMP) %>% print(n = Inf) 
+      
 # Additional modifications to NMA subset analysis data for running NMA with metafor  
+      
+  ## Create intervention and comparison bundles   
+      
+  ## Create contrast codes    
   
   ## Convert variables to their intended types 
   convert_to_character <- function(x) {
     as.character(x)
   }
-  NMA_data_analysis_subset_grpID[c("group_size_category","ongoing_training","research_lab","dosage_weekly_freq","grade_level")] <- lapply(NMA_data_analysis_subset_grpID[c("group_size_category","ongoing_training","research_lab","dosage_weekly_freq","grade_level")], convert_to_character)
   
   convert_to_factor <- function(x) {
     as.factor(x)
   }  
-  NMA_data_analysis_subset_grpID[c("group_size_category","ongoing_training","research_lab","dosage_weekly_freq","intervention_prelim","comparison_prelim")] <- lapply(NMA_data_analysis_subset_grpID[c("group_size_category","ongoing_training","research_lab","dosage_weekly_freq","intervention_prelim","comparison_prelim")], convert_to_factor)
-  NMA_data_analysis_subset_grpID[c("domain_numeric","control_nature_numeric","measure_developer_numeric","interventionist_numeric","TvsT")] <- lapply(NMA_data_analysis_subset_grpID[c("domain_numeric","control_nature_numeric","measure_developer_numeric","interventionist_numeric","TvsT")], convert_to_factor)
-  
-  NMA_data_analysis_subset_grpID$group_size_average <- as.character(NMA_data_analysis_subset_grpID$group_size_average)
-  NMA_data_analysis_subset_grpID$group_size_average <- as.numeric(NMA_data_analysis_subset_grpID$group_size_average)
-  
-  NMA_data_analysis_subset_grpID$grade_level <- as.numeric(NMA_data_analysis_subset_grpID$grade_level)
-  
-  ## Correct domain names
-  # tabyl(NMA_data_analysis_subset_grpID$domain)
-  # NMA_data_analysis_subset_grpID$domain <- gsub("Rational Numbers", "Rational Number", NMA_data_analysis_subset_grpID$domain)
-  # NMA_data_analysis_subset_grpID$domain <- gsub("Rational Number", "Rational Numbers", NMA_data_analysis_subset_grpID$domain)
-  # NMA_data_analysis_subset_grpID$domain <- gsub("Whole Numbers", "Whole Number", NMA_data_analysis_subset_grpID$domain)
-  # NMA_data_analysis_subset_grpID$domain <- gsub("Whole Number", "Whole Numbers", NMA_data_analysis_subset_grpID$domain)
-  # tabyl(NMA_data_analysis_subset_grpID$domain)
-  # class(NMA_data_analysis_subset_grpID$domain)
  
-  ## Correct bundle acronym/code
-  NMA_data_analysis_subset_grpID %>% count()
-  class(NMA_data_analysis_subset_grpID$intervention_prelim)
-  class(NMA_data_analysis_subset_grpID$comparison_prelim)
-  NMA_data_analysis_subset_grpID$intervention_prelim <- as.character(NMA_data_analysis_subset_grpID$intervention_prelim)
-  NMA_data_analysis_subset_grpID$comparison_prelim <- as.character(NMA_data_analysis_subset_grpID$comparison_prelim)
-  tabyl(NMA_data_analysis_subset_grpID$intervention_prelim)
-  tabyl(NMA_data_analysis_subset_grpID$comparison_prelim)
-  NMA_data_analysis_subset_grpID$intervention_prelim <- gsub("TES", "SE", NMA_data_analysis_subset_grpID$intervention_prelim)
-  NMA_data_analysis_subset_grpID$comparison_prelim <- gsub("TES", "SE", NMA_data_analysis_subset_grpID$comparison_prelim)
-  tabyl(NMA_data_analysis_subset_grpID$intervention_prelim)
-  tabyl(NMA_data_analysis_subset_grpID$comparison_prelim)  
-  
   ## Drop intervention versus comparison contrasts that have the same bundles
-  tabyl(NMA_data_analysis_subset_grpID$intervention_prelim)
-  tabyl(NMA_data_analysis_subset_grpID$comparison_prelim)
-  NMA_data_analysis_subset_grpID %>% count()
-  NMA_data_analysis_subset_grpID <- NMA_data_analysis_subset_grpID %>% filter(intervention_prelim!=comparison_prelim) #This also removes any roRS with <NA> values in columns intervention_prelim & comparison_prelim.
-  tabyl(NMA_data_analysis_subset_grpID$intervention_prelim)
-  tabyl(NMA_data_analysis_subset_grpID$comparison_prelim)  
-  NMA_data_analysis_subset_grpID %>% count()
-  tabyl(NMA_data_analysis_subset_grpID$domain)
-  NMA_data_analysis_subset_grpID$intervention_prelim <- as.factor(NMA_data_analysis_subset_grpID$intervention_prelim)
-  NMA_data_analysis_subset_grpID$comparison_prelim <- as.factor(NMA_data_analysis_subset_grpID$comparison_prelim)
-  class(NMA_data_analysis_subset_grpID$intervention_prelim)
-  class(NMA_data_analysis_subset_grpID$comparison_prelim)  
-  
-  ## Drop roRS with missing values in the intervention and comparison columns (i.e., <NA>).
-  NMA_data_analysis_subset_grpID %>% count()
-  NMA_data_analysis_subset_grpID <- NMA_data_analysis_subset_grpID %>% drop_na(c(intervention_prelim, comparison_prelim)) 
-  NMA_data_analysis_subset_grpID %>% count()
-  
-  ## Correct variable names
-  NMA_data_analysis_subset_grpID <- NMA_data_analysis_subset_grpID %>% rename(contrast_name= contrast_name...15)
-  # tabyl(NMA_data_analysis_subset_grpID$intervention_content...33)
-  # tabyl(NMA_data_analysis_subset_grpID$intervention_content...36)
-  # NMA_data_analysis_subset_grpID <- NMA_data_analysis_subset_grpID %>% rename(intervention_content= intervention_content...36)
 
-  ## Check counts of final NMA analysis file
-    
-    ### NUmber of domains
-    tabyl(NMA_data_analysis_subset_grpID$domain)
+  ## Correct variable names
   
-    ### Number of effect sizes
-    NMA_data_analysis_subset_grpID %>% count()
-    tabyl(NMA_data_analysis_subset_grpID$es_id)
-    
-    ### Number of contrasts
-    NMA_data_analysis_subset_grpID_c <- NMA_data_analysis_subset_grpID %>% distinct(contrast_id, .keep_all = TRUE)
-    NMA_data_analysis_subset_grpID_c %>% count()
-    tabyl(NMA_data_analysis_subset_grpID_c$contrast_id)
-    NMA_study_contrast_list <- NMA_data_analysis_subset_grpID_c %>% dplyr::select(record_id, "Abbreviated Citation", contrast_id, contrast_name) #Create list of study-contrasts included in NMA.
-    print(NMA_study_contrast_list, n= Inf)
-    #write_csv(NMA_study_contrast_list, 'NMA_study_contrast_list_all_nodes.csv')
-    
-    ### Number of studies
-    NMA_data_analysis_subset_grpID_s <- NMA_data_analysis_subset_grpID %>% distinct(record_id, .keep_all = TRUE)
-    NMA_data_analysis_subset_grpID_s %>% count()
-    tabyl(NMA_data_analysis_subset_grpID_s$record_id)
-     
-# Execute network meta-analysis using a contrast-based random-effects model using BAU as the reference condition: intervention_content == "Rhole Numbers (R)"
+ 
+# Execute additive component network meta-analysis using a contrast-based random-effects model using BAU as the reference condition: intervention_content == "Whole Numbers (W)"
       
   ## Subset analysis data frame further to just the Whole Numbers (W) intervention content (icW)
   tabyl(NMA_data_analysis_subset_grpID$intervention_content)
