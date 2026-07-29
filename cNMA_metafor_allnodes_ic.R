@@ -55,7 +55,7 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
     inspect_categorical(CNMA_Data, intervention_content)
 
     ### Sample sizes
-    CNMA_Data %>% count(intervention_n,comparison_n,full_sample_size) %>% print(n = Inf)
+    CNMA_Data %>% count(intervention_n, comparison_n, full_sample_size) %>% print(n = Inf)
     
     ### Statistics
     inspect_continuous(CNMA_Data, effect_size)
@@ -92,14 +92,15 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
       
       #### Vocabulary
       inspect_categorical(CNMA_Data, WTS_TX) # Column AK
-      inspect_categorical(CNMA_Data, VT_TX...38) # Column AL   
+      #inspect_categorical(CNMA_Data, VT_TX...38) # Column AL   
       inspect_categorical(CNMA_Data, SV_TX) # Column AM   
       
       inspect_categorical(CNMA_Data, WTS_COMP) # Column CH
-      inspect_categorical(CNMA_Data, VT_COMP...87) # Column CI    
+      #inspect_categorical(CNMA_Data, VT_COMP...87) # Column CI   
+      CNMA_Data$SV_COMP <- as.numeric(CNMA_Data$SV_COMP) #Change from class "logical" to "numeric". Imports as logical because all vlaues "N/A".
       inspect_categorical(CNMA_Data, SV_COMP) # Column CJ
       
-      CNMA_Data %>% count(WTS_TX, VT_TX...38, SV_TX, WTS_COMP, VT_COMP...87, SV_COMP) %>% print(n = Inf)
+      CNMA_Data %>% count(WTS_TX, SV_TX, WTS_COMP, SV_COMP) %>% print(n = Inf)
       
       #### Fluency- Feedback, goals, content, count of activities
       inspect_categorical(CNMA_Data, FF_TX) # Column AO
@@ -121,16 +122,16 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
       inspect_categorical(CNMA_Data, PREXTRA_COMP) # Column DI
       inspect_categorical(CNMA_Data, BX_COMP) # Column DJ 
       
-      CNMA_Data %>% count(BR_TX, MR_TX, PREXTRA_TX, BX_TX) %>% print(n = Inf)
+      CNMA_Data %>% count(BR_TX, MR_TX, PREXTRA_TX, BX_TX, BR_COMP, MR_COMP, PREXTRA_COMP, BX_COMP) %>% print(n = Inf)
       
       #### Worked Examples
       inspect_categorical(CNMA_Data, WXA_TX) # Column BO
       inspect_categorical(CNMA_Data, WXP_TX) # Column BP   
       
-      inspect_categorical(CNMA_Data, WXA_TX) # Column DL
-      inspect_categorical(CNMA_Data, WXP_TX) # Column DM  
+      inspect_categorical(CNMA_Data, WXA_COMP) # Column DL
+      inspect_categorical(CNMA_Data, WXP_COMP) # Column DM  
       
-      CNMA_Data %>% count(FF_TX, FO_TX, FF_COMP, FO_COMP) %>% print(n = Inf)      
+      CNMA_Data %>% count(WXA_TX, WXP_TX, WXA_COMP, WXP_COMP) %>% print(n = Inf)      
       
       #### Strategy Instruction-  multi step strategy or basic fact strategy taught
       CNMA_Data <- CNMA_Data %>% rename(WP2_TX = `2_WPS_word problem specific [strategy]`)
@@ -150,8 +151,39 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
       CNMA_Data %>% count(MS2_TX, WPS_TX, WP2_TX, MS_TX, BFS_TX, MS2_COMP, WPS_COMP, WP2_COMP, MS_COMP, BFS_COMP) %>% print(n = Inf) 
       
 # Additional modifications to NMA subset analysis data for running NMA with metafor  
+  
+  ## Replace n/A with zeros in components   
+  
+  replace_na_specific <- function(df, cols) {
+    df %>%
+      mutate(across(
+        all_of(cols),
+        ~ replace(.x, is.na(.x), 0)
+      ))
+  } 
+  
+  CNMA_Data <- replace_na_specific(CNMA_Data, c("NL_TX", "N_TX", "NL_COMP", "N_COMP"))
+  CNMA_Data <- replace_na_specific(CNMA_Data, c("R_TX", "RV_TX", "R_COMP", "RV_COMP"))
+  CNMA_Data <- replace_na_specific(CNMA_Data, c("ME_TX", "VT_TX...35", "ME_COMP", "VT_COMP...84"))
+  CNMA_Data <- replace_na_specific(CNMA_Data, c("WTS_TX", "SV_TX", "WTS_COMP", "SV_COMP"))
+  CNMA_Data <- replace_na_specific(CNMA_Data, c("FF_TX", "FO_TX", "FF_COMP", "FO_COMP"))
+  CNMA_Data <- replace_na_specific(CNMA_Data, c("BR_TX", "MR_TX", "PREXTRA_TX", "BX_TX", "BR_COMP", "MR_COMP", "PREXTRA_COMP", "BX_COMP"))
+  CNMA_Data <- replace_na_specific(CNMA_Data, c("WXA_TX", "WXP_TX", "WXA_COMP", "WXP_COMP"))
+  CNMA_Data <- replace_na_specific(CNMA_Data, c("MS2_TX", "WPS_TX", "WP2_TX", "MS_TX", "BFS_TX", "MS2_COMP", "WPS_COMP", "WP2_COMP", "MS_COMP", "BFS_COMP"))
+  
+  CNMA_Data %>% count(NL_TX, N_TX, NL_COMP, N_COMP) %>% print(n = Inf)
+  CNMA_Data %>% count(R_TX, RV_TX, R_COMP, RV_COMP) %>% print(n = Inf)  
+  CNMA_Data %>% count(ME_TX, VT_TX...35, ME_COMP, VT_COMP...84) %>% print(n = Inf) 
+  CNMA_Data %>% count(WTS_TX, SV_TX, WTS_COMP, SV_COMP) %>% print(n = Inf)
+  CNMA_Data %>% count(FF_TX, FO_TX, FF_COMP, FO_COMP) %>% print(n = Inf)
+  CNMA_Data %>% count(BR_TX, MR_TX, PREXTRA_TX, BX_TX, BR_COMP, MR_COMP, PREXTRA_COMP, BX_COMP) %>% print(n = Inf)
+  CNMA_Data %>% count(WXA_TX, WXP_TX, WXA_COMP, WXP_COMP) %>% print(n = Inf)   
+  CNMA_Data %>% count(MS2_TX, WPS_TX, WP2_TX, MS_TX, BFS_TX, MS2_COMP, WPS_COMP, WP2_COMP, MS_COMP, BFS_COMP) %>% print(n = Inf) 
       
-  ## Create intervention and comparison bundles   
+  ## Create intervention and comparison bundles  
+  intervention_component_bundle
+  
+  comparison_component_bundle
       
   ## Create contrast codes    
   
