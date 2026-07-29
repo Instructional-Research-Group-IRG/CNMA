@@ -200,8 +200,12 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
     
     CNMA_Data <- make_indicator_labels_plus(CNMA_Data, c("NL_TX", "N_TX", "R_TX", "RV_TX", "ME_TX", "VT_TX", "WTS_TX", "SV_TX", "FF_TX", "FO_TX", "BR_TX", "MR_TX", "PREXTRA_TX", "BX_TX", "WXA_TX", "WXP_TX", "MS2_TX", "WPS_TX", "WP2_TX", "MS_TX", "BFS_TX"))
     tabyl(CNMA_Data$intervention_component_bundle)
+    class(CNMA_Data$intervention_component_bundle)
+    #CNMA_Data$intervention_component_bundle <- as.factor(CNMA_Data$intervention_component_bundle)
+    class(CNMA_Data$intervention_component_bundle)
+    tabyl(CNMA_Data$intervention_component_bundle)
     CNMA_Data %>% count(intervention_component_bundle, NL_TX, N_TX, R_TX, RV_TX, ME_TX, VT_TX, WTS_TX, SV_TX, FF_TX, FO_TX, BR_TX, MR_TX, PREXTRA_TX, BX_TX, WXA_TX, WXP_TX, MS2_TX, WPS_TX, WP2_TX, MS_TX, BFS_TX) %>% print(n = Inf)
-  
+
     ### comparison_component_bundle
     make_indicator_labels_plus <- function(df, cols, new_col = "comparison_component_bundle") {
       df %>%
@@ -215,6 +219,11 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
     }
     
     CNMA_Data <- make_indicator_labels_plus(CNMA_Data, c("NL_COMP", "N_COMP", "R_COMP", "RV_COMP", "ME_COMP", "VT_COMP", "WTS_COMP", "SV_COMP", "FF_COMP", "FO_COMP", "BR_COMP", "MR_COMP", "PREXTRA_COMP", "BX_COMP", "WXA_COMP", "WXP_COMP", "MS2_COMP", "WPS_COMP", "WP2_COMP", "MS_COMP", "BFS_COMP"))
+    CNMA_Data <- CNMA_Data %>% mutate(comparison_component_bundle = if_else(comparison_component_bundle == "", "BAU", comparison_component_bundle))
+    tabyl(CNMA_Data$comparison_component_bundle)
+    class(CNMA_Data$comparison_component_bundle)
+    #CNMA_Data$comparison_component_bundle <- as.factor(CNMA_Data$comparison_component_bundle)
+    class(CNMA_Data$comparison_component_bundle)
     tabyl(CNMA_Data$comparison_component_bundle)
     CNMA_Data %>% count(comparison_component_bundle, NL_COMP, N_COMP, R_COMP, RV_COMP, ME_COMP, VT_COMP, WTS_COMP, SV_COMP, FF_COMP, FO_COMP, BR_COMP, MR_COMP, PREXTRA_COMP, BX_COMP, WXA_COMP, WXP_COMP, MS2_COMP, WPS_COMP, WP2_COMP, MS_COMP, BFS_COMP) %>% print(n = Inf)
     
@@ -296,13 +305,20 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
   CNMA_Data %>% count(BFS_TX, BFS_COMP, BFS) %>% print(n = Inf)  
   
   ## Drop intervention versus comparison contrasts that have the same bundles
-
- 
+  CNMA_Data <- CNMA_Data %>% mutate(nonzero_count = rowSums(across(c(NL, N, R, RV, ME, VT, WTS, SV, FF, FO, BR, MR, PREXTRA, BX, WXA, WXP, MS2, WPS, WP2, BFS), ~ .x != 0)))
+  CNMA_Data2_dropcheck <- CNMA_Data %>% dplyr::select(study_id, contrast_id, es_id, intervention_component_bundle, comparison_component_bundle, NL, N, R, RV, ME, VT, WTS, SV, FF, FO, BR, MR, PREXTRA, BX, WXA, WXP, MS2, WPS, WP2, BFS, nonzero_count)
+  print(CNMA_Data2_dropcheck, n=Inf)
+  write_csv(CNMA_Data2_dropcheck, file = "CNMA_Data2_dropcheck.csv")
+  #write_xlsx(CNMA_Data2_dropcheck, 'CNMA_Data2_dropcheck.xlsx')
+  CNMA_Data %>% count()
+  CNMA_Data_nomirrors <- CNMA_Data %>% filter(!(nonzero_count == 0)) #Those rows with all zero values for the contrast-coded components have the exact same intervention/comparison component bundles and thus are "mirrors" which we are dropping from the analysis.
+  CNMA_Data_nomirrors %>% count()
+  
 # Execute additive component network meta-analysis using a contrast-based random-effects model using BAU as the reference condition: intervention_content == "Whole Numbers (W)"
       
   ## Subset analysis data frame further to just the Whole Numbers (W) intervention content (icW)
-  tabyl(CNMA_Data$intervention_content)
-  CNMA_Data_subset_icW <- CNMA_Data %>% filter(intervention_content == "W")
+  tabyl(CNMA_Data_nomirrors$intervention_content)
+  CNMA_Data_subset_icW <- CNMA_Data_nomirrors %>% filter(intervention_content == "W")
   tabyl(CNMA_Data_subset_icW$intervention_content)
   CNMA_Data_subset_icW_c <- CNMA_Data_subset_icW %>% distinct(contrast_id, .keep_all = TRUE)
   CNMA_Data_subset_icW_c %>% count()
@@ -386,8 +402,8 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
 # Execute network meta-analysis using a contrast-based random-effects model using BAU as the reference condition: intervention_content == "Rational Numbers (R)"
     
     ## Subset analysis data frame further to just the Rational Numbers (R) intervention content (icR)
-    tabyl(CNMA_Data$intervention_content)
-    CNMA_Data_subset_icR <- CNMA_Data %>% filter(intervention_content == "R")
+    tabyl(CNMA_Data_nomirrors$intervention_content)
+    CNMA_Data_subset_icR <- CNMA_Data_nomirrors %>% filter(intervention_content == "R")
     tabyl(CNMA_Data_subset_icR$intervention_content)
     CNMA_Data_subset_icR_c <- CNMA_Data_subset_icR %>% distinct(contrast_id, .keep_all = TRUE)
     CNMA_Data_subset_icR_c %>% count()
