@@ -218,20 +218,85 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
     tabyl(CNMA_Data$comparison_component_bundle)
     CNMA_Data %>% count(comparison_component_bundle, NL_COMP, N_COMP, R_COMP, RV_COMP, ME_COMP, VT_COMP, WTS_COMP, SV_COMP, FF_COMP, FO_COMP, BR_COMP, MR_COMP, PREXTRA_COMP, BX_COMP, WXA_COMP, WXP_COMP, MS2_COMP, WPS_COMP, WP2_COMP, MS_COMP, BFS_COMP) %>% print(n = Inf)
     
-  ## Create contrast codes    
-  
-  ## Convert variables to their intended types 
-  convert_to_character <- function(x) {
-    as.character(x)
-  }
-  
-  convert_to_factor <- function(x) {
-    as.factor(x)
+  ## Create contrast codes   
+  make_contrast_column <- function(df, col1, col2, new_col) {
+    df %>%
+      mutate(
+        {{ new_col }} := case_when(
+          .data[[col1]] == 1 & .data[[col2]] == 0 ~ 1,
+          .data[[col1]] == 0 & .data[[col2]] == 1 ~ -1,
+          .data[[col1]] == 1 & .data[[col2]] == 1 ~ 0,
+          .data[[col1]] == 0 & .data[[col2]] == 0 ~ 0,
+          TRUE ~ NA_real_
+        )
+      )
   }  
- 
+  
+  CNMA_Data <- make_contrast_column(CNMA_Data, "NL_TX", "NL_COMP", NL)
+  CNMA_Data %>% count(NL_TX, NL_COMP, NL) %>% print(n = Inf)
+  
+  CNMA_Data <- make_contrast_column(CNMA_Data, "N_TX", "N_COMP", N)
+  CNMA_Data %>% count(N_TX, N_COMP, N) %>% print(n = Inf)
+  
+  CNMA_Data <- make_contrast_column(CNMA_Data, "R_TX", "R_COMP", R)
+  CNMA_Data %>% count(R_TX, R_COMP, R) %>% print(n = Inf)
+  
+  CNMA_Data <- make_contrast_column(CNMA_Data, "RV_TX", "RV_COMP", RV)
+  CNMA_Data %>% count(RV_TX, RV_COMP, RV) %>% print(n = Inf)
+  
+  CNMA_Data <- make_contrast_column(CNMA_Data, "ME_TX", "ME_COMP", ME)
+  CNMA_Data %>% count(ME_TX, ME_COMP, ME) %>% print(n = Inf)
+  
+  CNMA_Data <- make_contrast_column(CNMA_Data, "VT_TX", "VT_COMP", VT)
+  CNMA_Data %>% count(VT_TX, VT_COMP, VT) %>% print(n = Inf)
+  
+  CNMA_Data <- make_contrast_column(CNMA_Data, "WTS_TX", "WTS_COMP", WTS)
+  CNMA_Data %>% count(WTS_TX, WTS_COMP, WTS) %>% print(n = Inf)
+  
+  CNMA_Data <- make_contrast_column(CNMA_Data, "SV_TX", "SV_COMP", SV)
+  CNMA_Data %>% count(SV_TX, SV_COMP, SV) %>% print(n = Inf)
+  
+  CNMA_Data <- make_contrast_column(CNMA_Data, "FF_TX", "FF_COMP", FF)
+  CNMA_Data %>% count(FF_TX, FF_COMP, FF) %>% print(n = Inf)
+  
+  CNMA_Data <- make_contrast_column(CNMA_Data, "FO_TX", "FO_COMP", FO)
+  CNMA_Data %>% count(FO_TX, FO_COMP, FO) %>% print(n = Inf)  
+  
+  CNMA_Data <- make_contrast_column(CNMA_Data, "BR_TX", "BR_COMP", BR)
+  CNMA_Data %>% count(BR_TX, BR_COMP, BR) %>% print(n = Inf)
+  
+  CNMA_Data <- make_contrast_column(CNMA_Data, "MR_TX", "MR_COMP", MR)
+  CNMA_Data %>% count(MR_TX, MR_COMP, MR) %>% print(n = Inf)
+  
+  CNMA_Data <- make_contrast_column(CNMA_Data, "PREXTRA_TX", "PREXTRA_COMP", PREXTRA)
+  CNMA_Data %>% count(PREXTRA_TX, PREXTRA_COMP, PREXTRA) %>% print(n = Inf)
+  
+  CNMA_Data <- make_contrast_column(CNMA_Data, "BX_TX", "BX_COMP", BX)
+  CNMA_Data %>% count(BX_TX, BX_COMP, BX) %>% print(n = Inf)  
+  
+  CNMA_Data <- make_contrast_column(CNMA_Data, "WXA_TX", "WXA_COMP", WXA)
+  CNMA_Data %>% count(WXA_TX, WXA_COMP, WXA) %>% print(n = Inf)
+  
+  CNMA_Data <- make_contrast_column(CNMA_Data, "WXP_TX", "WXP_COMP", WXP)
+  CNMA_Data %>% count(WXP_TX, WXP_COMP, WXP) %>% print(n = Inf)  
+
+  CNMA_Data <- make_contrast_column(CNMA_Data, "MS2_TX", "MS2_COMP", MS2)
+  CNMA_Data %>% count(MS2_TX, MS2_COMP, MS2) %>% print(n = Inf)
+  
+  CNMA_Data <- make_contrast_column(CNMA_Data, "WPS_TX", "WPS_COMP", WPS)
+  CNMA_Data %>% count(WPS_TX, WPS_COMP, WPS) %>% print(n = Inf)
+  
+  CNMA_Data <- make_contrast_column(CNMA_Data, "WP2_TX", "WP2_COMP", WP2)
+  CNMA_Data %>% count(WP2_TX, WP2_COMP, WP2) %>% print(n = Inf)  
+  
+  CNMA_Data <- make_contrast_column(CNMA_Data, "MS_TX", "MS_COMP", MS)
+  CNMA_Data %>% count(MS_TX, MS_COMP, MS) %>% print(n = Inf)
+  
+  CNMA_Data <- make_contrast_column(CNMA_Data, "BFS_TX", "BFS_COMP", BFS)
+  CNMA_Data %>% count(BFS_TX, BFS_COMP, BFS) %>% print(n = Inf)  
+  
   ## Drop intervention versus comparison contrasts that have the same bundles
 
-  ## Correct variable names
   
  
 # Execute additive component network meta-analysis using a contrast-based random-effects model using BAU as the reference condition: intervention_content == "Whole Numbers (W)"
