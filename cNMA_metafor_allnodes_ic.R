@@ -11,7 +11,7 @@
   
   ## Install and load other required packages
   #install.packages("pacman") 
-  pacman::p_load(metafor, googlesheets4, dplyr, tidyr, skimr, testit, assertable, meta, netmeta, stringr, janitor, naniar, igraph, multcomp, broom, gridExtra, ggplot2, writexl, readr, grid, gridExtra, cowplot, extrafont)
+  pacman::p_load(metafor, googlesheets4, dplyr, tidyr, skimr, testit, assertable, meta, netmeta, stringr, janitor, naniar, igraph, multcomp, broom, gridExtra, ggplot2, writexl, readr, grid, gridExtra, cowplot, extrafont, purrr)
   
 # Load (read) data (i.e., copy data to 'dat')
 CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWVNLx1uksOu4QQlf2Xo7p4SZahPMio/edit?gid=931222966#gid=931222966&fvid=1356828720", sheet="Master Database") # <<CNMA master database>>
@@ -152,6 +152,10 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
       
 # Additional modifications to NMA subset analysis data for running NMA with metafor  
   
+  ## Correct duplicate column names
+  CNMA_Data <- CNMA_Data %>% rename(VT_TX = VT_TX...35)
+  CNMA_Data <- CNMA_Data %>% rename(VT_COMP = VT_COMP...84)
+  
   ## Replace n/A with zeros in components   
   
   replace_na_specific <- function(df, cols) {
@@ -164,7 +168,7 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
   
   CNMA_Data <- replace_na_specific(CNMA_Data, c("NL_TX", "N_TX", "NL_COMP", "N_COMP"))
   CNMA_Data <- replace_na_specific(CNMA_Data, c("R_TX", "RV_TX", "R_COMP", "RV_COMP"))
-  CNMA_Data <- replace_na_specific(CNMA_Data, c("ME_TX", "VT_TX...35", "ME_COMP", "VT_COMP...84"))
+  CNMA_Data <- replace_na_specific(CNMA_Data, c("ME_TX", "VT_TX", "ME_COMP", "VT_COMP"))
   CNMA_Data <- replace_na_specific(CNMA_Data, c("WTS_TX", "SV_TX", "WTS_COMP", "SV_COMP"))
   CNMA_Data <- replace_na_specific(CNMA_Data, c("FF_TX", "FO_TX", "FF_COMP", "FO_COMP"))
   CNMA_Data <- replace_na_specific(CNMA_Data, c("BR_TX", "MR_TX", "PREXTRA_TX", "BX_TX", "BR_COMP", "MR_COMP", "PREXTRA_COMP", "BX_COMP"))
@@ -173,7 +177,7 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
   
   CNMA_Data %>% count(NL_TX, N_TX, NL_COMP, N_COMP) %>% print(n = Inf)
   CNMA_Data %>% count(R_TX, RV_TX, R_COMP, RV_COMP) %>% print(n = Inf)  
-  CNMA_Data %>% count(ME_TX, VT_TX...35, ME_COMP, VT_COMP...84) %>% print(n = Inf) 
+  CNMA_Data %>% count(ME_TX, VT_TX, ME_COMP, VT_COMP) %>% print(n = Inf) 
   CNMA_Data %>% count(WTS_TX, SV_TX, WTS_COMP, SV_COMP) %>% print(n = Inf)
   CNMA_Data %>% count(FF_TX, FO_TX, FF_COMP, FO_COMP) %>% print(n = Inf)
   CNMA_Data %>% count(BR_TX, MR_TX, PREXTRA_TX, BX_TX, BR_COMP, MR_COMP, PREXTRA_COMP, BX_COMP) %>% print(n = Inf)
@@ -181,10 +185,39 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
   CNMA_Data %>% count(MS2_TX, WPS_TX, WP2_TX, MS_TX, BFS_TX, MS2_COMP, WPS_COMP, WP2_COMP, MS_COMP, BFS_COMP) %>% print(n = Inf) 
       
   ## Create intervention and comparison bundles  
-  intervention_component_bundle
+
+    ### intervention_component_bundle
+    make_indicator_labels_plus <- function(df, cols, new_col = "intervention_component_bundle") {
+      df %>%
+        rowwise() %>%
+        mutate(
+          {{ new_col }} := cols %>%
+            keep(~ get(.x) == 1) %>%     # keep only column names where value == 1
+            str_c(collapse = " + ")      # join with "+"
+        ) %>%
+        ungroup()
+    }
+    
+    CNMA_Data <- make_indicator_labels_plus(CNMA_Data, c("NL_TX", "N_TX", "R_TX", "RV_TX", "ME_TX", "VT_TX", "WTS_TX", "SV_TX", "FF_TX", "FO_TX", "BR_TX", "MR_TX", "PREXTRA_TX", "BX_TX", "WXA_TX", "WXP_TX", "MS2_TX", "WPS_TX", "WP2_TX", "MS_TX", "BFS_TX"))
+    tabyl(CNMA_Data$intervention_component_bundle)
+    CNMA_Data %>% count(intervention_component_bundle, NL_TX, N_TX, R_TX, RV_TX, ME_TX, VT_TX, WTS_TX, SV_TX, FF_TX, FO_TX, BR_TX, MR_TX, PREXTRA_TX, BX_TX, WXA_TX, WXP_TX, MS2_TX, WPS_TX, WP2_TX, MS_TX, BFS_TX) %>% print(n = Inf)
   
-  comparison_component_bundle
-      
+    ### comparison_component_bundle
+    make_indicator_labels_plus <- function(df, cols, new_col = "comparison_component_bundle") {
+      df %>%
+        rowwise() %>%
+        mutate(
+          {{ new_col }} := cols %>%
+            keep(~ get(.x) == 1) %>%     # keep only column names where value == 1
+            str_c(collapse = " + ")      # join with "+"
+        ) %>%
+        ungroup()
+    }
+    
+    CNMA_Data <- make_indicator_labels_plus(CNMA_Data, c("NL_COMP", "N_COMP", "R_COMP", "RV_COMP", "ME_COMP", "VT_COMP", "WTS_COMP", "SV_COMP", "FF_COMP", "FO_COMP", "BR_COMP", "MR_COMP", "PREXTRA_COMP", "BX_COMP", "WXA_COMP", "WXP_COMP", "MS2_COMP", "WPS_COMP", "WP2_COMP", "MS_COMP", "BFS_COMP"))
+    tabyl(CNMA_Data$comparison_component_bundle)
+    CNMA_Data %>% count(comparison_component_bundle, NL_COMP, N_COMP, R_COMP, RV_COMP, ME_COMP, VT_COMP, WTS_COMP, SV_COMP, FF_COMP, FO_COMP, BR_COMP, MR_COMP, PREXTRA_COMP, BX_COMP, WXA_COMP, WXP_COMP, MS2_COMP, WPS_COMP, WP2_COMP, MS_COMP, BFS_COMP) %>% print(n = Inf)
+    
   ## Create contrast codes    
   
   ## Convert variables to their intended types 
@@ -215,7 +248,7 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
   str(NMA_data_analysis_subset_grpID_icW)
   
   ## Calculate the variance-covariance matrix for multi-treatment studies
-  V_list <- vcalc(variance, cluster= record_id, obs= measure_name, type= domain, rho=c(0.6, 0.6), grp1=group1_id, grp2=group2_id, w1=intervention_n, w2=comparison_n, data=NMA_data_analysis_subset_grpID_icW)
+  V_list <- vcalc(variance, cluster= study_id, obs= measure_name, type= domain, rho=c(0.6, 0.6), grp1=intervention_component_bundle, grp2=comparison_component_bundle, w1=intervention_n, w2=comparison_n, data=CNMA_Data)
   V_list    
   V_list_icW <- data.frame(V_list)
   #write_csv(V_list_icW, 'V_list_icW.csv')
