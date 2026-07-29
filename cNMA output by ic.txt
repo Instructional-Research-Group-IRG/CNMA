@@ -10,24 +10,19 @@ NNMA database run as CNMA (all nodes included consistent with original NMA):
 	+                             data=CNMA_Data_subset_icW)
 	>     summary(res_mod_icW_cnma) 
 
-	Multivariate Meta-Analysis Model (k = 275; method: REML)
-
-	  logLik  Deviance       AIC       BIC      AICc   
-	-87.0490  174.0980  218.0980  296.0058  222.4601   
+	Multivariate Meta-Analysis Model (k = 245; method: REML)
 
 	Variance Components:
 
-        	    estim    sqrt  nlvls  fixed          factor 
-	sigma^2.1  0.0000  0.0000     40     no        study_id 
-	sigma^2.2  0.0873  0.2955    275     no  study_id/es_id 
+            	estim    sqrt  nlvls  fixed          factor 
+	sigma^2.1  0.0000  0.0000     39     no        study_id 
+	sigma^2.2  0.0916  0.3027    245     no  study_id/es_id 
 
 	Test for Residual Heterogeneity:
-	QE(df = 255) = 76305.4824, p-val < .0001
+	QE(df = 225) = 54225.3760, p-val < .0001
 
 	Test of Moderators (coefficients 1:20):
-	QM(df = 20) = 218.4574, p-val < .0001
-
-	Model Results:
+	QM(df = 20) = 217.1321, p-val < .0001
 
 	         estimate      se     zval    pval    ci.lb   ci.ub     
 	NL        -0.2689  0.2281  -1.1789  0.2384  -0.7161  0.1782     
@@ -90,19 +85,19 @@ NNMA database run as CNMA (all nodes included consistent with original NMA):
 	1: 'V' appears to be not positive definite. 
 	2: Redundant predictors dropped from the model. >     summary(res_mod_icR_cnma) 
 
-	Multivariate Meta-Analysis Model (k = 158; method: REML)
+	Multivariate Meta-Analysis Model (k = 132; method: REML)
 
-	   logLik   Deviance        AIC        BIC       AICc   
-	-134.5463   269.0926   307.0926   363.1190   313.3736   
+   	logLik   Deviance        AIC        BIC       AICc   
+	-113.8331   227.6662   265.6662   317.8200   273.6662   
 
 	Variance Components:
 
-        	    estim    sqrt  nlvls  fixed          factor 
-	sigma^2.1  0.1088  0.3299     21     no        study_id 
-	sigma^2.2  0.3115  0.5581    158     no  study_id/es_id 
+            	estim    sqrt  nlvls  fixed          factor 
+	sigma^2.1  0.3597  0.5998     20     no        study_id 
+	sigma^2.2  0.3409  0.5839    132     no  study_id/es_id 
 
 	Test of Moderators (coefficients 1:17):
-	QM(df = 17) = 138.7453, p-val < .0001
+	QM(df = 17) = 61.7115, p-val < .0001
 
 	Model Results:
 
