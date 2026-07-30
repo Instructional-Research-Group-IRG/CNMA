@@ -1,5 +1,5 @@
 # This script performs a component network meta-analysis (cNMA) of mathematics education interventions using outcomes in the whole and ration numbers domains. 
-# Sample: all nodes
+
 # Variable for defining outcome domain: intervention_content
 # Disaggregated by domain: Yes
 
