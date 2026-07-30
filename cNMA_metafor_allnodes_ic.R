@@ -314,6 +314,9 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
   CNMA_Data_nomirrors <- CNMA_Data %>% filter(!(nonzero_count == 0)) #Those rows with all zero values for the contrast-coded components have the exact same intervention/comparison component bundles and thus are "mirrors" which we are dropping from the analysis.
   CNMA_Data_nomirrors %>% count()
   
+  ## Check for lone components
+  #TBD
+  
 # Execute additive component network meta-analysis using a contrast-based random-effects model using BAU as the reference condition: intervention_content == "Whole Numbers (W)"
       
   ## Subset analysis data frame further to just the Whole Numbers (W) intervention content (icW)
@@ -336,8 +339,9 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
 
     ### Fit additive CNMA model assuming consistency (tau^2_omega=0)
     res_mod_icW_cnma <- rma.mv(effect_size, V_list, 
-                            mods = ~ NL + N + R + RV + ME + VT + WTS + SV + FF + FO + BR + MR + PREXTRA + BX + WXA + WXP + MS2 + WPS + WP2 + BFS - 1, # BAU is excluded to serve as the reference level for the comparisons.
-                            random = ~ 1 | study_id/es_id, 
+                            # mods = ~ NL + N + R + RV + ME + VT + WTS + SV + FF + FO + BR + MR + PREXTRA + BX + WXA + WXP + MS2 + WPS + WP2 + BFS - 1, # Full list of available contrast-coded components for reference.
+                            mods = ~ NL + R + ME + VT + WTS + FF + BR + MR + WXA + MS2 + BFS - 1, # BAU is excluded to serve as the reference level for the comparisons.
+                            random = ~ 1 | study_id/es_id, # Not necessary to show that we do not need to include other dependencies and can reference previous investigations into this and related assumptions taken under NMA work
                             rho=0.60, 
                             data=CNMA_Data_subset_icW)
     summary(res_mod_icW_cnma) 
@@ -421,8 +425,9 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
     
     ### Fit additive CNMA model assuming consistency (tau^2_omega=0)
     res_mod_icR_cnma <- rma.mv(effect_size, V_list, 
-                               mods = ~ NL + N + R + RV + ME + VT + WTS + SV + FF + FO + BR + MR + PREXTRA + BX + WXA + WXP + MS2 + WPS + WP2 + BFS - 1, # BAU is excluded to serve as the reference level for the comparisons.
-                               random = ~ 1 | study_id/es_id, 
+                               # mods = ~ NL + N + R + RV + ME + VT + WTS + SV + FF + FO + BR + MR + PREXTRA + BX + WXA + WXP + MS2 + WPS + WP2 + BFS - 1, # Full list of available contrast-coded components for reference.
+                               mods = ~ NL + R + ME + VT + WTS + FF + BR + MR + WXA + MS2 + BFS - 1, # BAU is excluded to serve as the reference level for the comparisons.
+                               random = ~ 1 | study_id/es_id, # Not necessary to show that we do not need to include other dependencies and can reference previous investigations into this and related assumptions taken under NMA work
                                rho=0.60, 
                                data=CNMA_Data_subset_icR)
     summary(res_mod_icR_cnma) 
