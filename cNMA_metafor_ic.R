@@ -308,14 +308,15 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
   CNMA_Data <- CNMA_Data %>% mutate(nonzero_count = rowSums(across(c(NL, N, R, RV, ME, VT, WTS, SV, FF, FO, BR, MR, PREXTRA, BX, WXA, WXP, MS2, WPS, WP2, BFS), ~ .x != 0)))
   CNMA_Data2_dropcheck <- CNMA_Data %>% dplyr::select(study_id, contrast_id, es_id, intervention_component_bundle, comparison_component_bundle, NL, N, R, RV, ME, VT, WTS, SV, FF, FO, BR, MR, PREXTRA, BX, WXA, WXP, MS2, WPS, WP2, BFS, nonzero_count)
   print(CNMA_Data2_dropcheck, n=Inf)
-  write_csv(CNMA_Data2_dropcheck, file = "CNMA_Data2_dropcheck.csv")
+  #write_csv(CNMA_Data2_dropcheck, file = "CNMA_Data2_dropcheck.csv")
   #write_xlsx(CNMA_Data2_dropcheck, 'CNMA_Data2_dropcheck.xlsx')
   CNMA_Data %>% count()
   CNMA_Data_nomirrors <- CNMA_Data %>% filter(!(nonzero_count == 0)) #Those rows with all zero values for the contrast-coded components have the exact same intervention/comparison component bundles and thus are "mirrors" which we are dropping from the analysis.
   CNMA_Data_nomirrors %>% count()
   
   ## Check for lone components
-  #TBD
+  # Note: Lone components are checked for in the CNMA_Data2_dropcheck.csv file exported above by summing the absolute value of each contrast-coded component column. 
+  #       Any column summng to just ==1 would be a lone component. None do so there are no lone components in the CNMA database.
   
 # Execute additive component network meta-analysis using a contrast-based random-effects model using BAU as the reference condition: intervention_content == "Whole Numbers (W)"
       
