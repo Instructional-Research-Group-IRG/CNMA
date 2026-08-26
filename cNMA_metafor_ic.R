@@ -27,6 +27,8 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
   ## Check ratings
   CNMA_Data %>% group_by(wwc_rating) %>% count() %>% ungroup()
   CNMA_Data %>% group_by(domain, wwc_rating) %>% count() %>% ungroup() %>% print(n= Inf)
+  CNMA_Data %>% group_by(intervention_content, wwc_rating) %>% count() %>% ungroup() %>% print(n= Inf)  
+  CNMA_Data %>% group_by(intervention_content, domain, wwc_rating) %>% count() %>% ungroup() %>% print(n= Inf)  
   
   ## Check for full duplicates
   dups <- anyDuplicated(CNMA_Data)
@@ -83,10 +85,14 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
       
       #### Student Explanations- Taught or given opportunities
       inspect_categorical(CNMA_Data, ME_TX) # Column AH
-      inspect_categorical(CNMA_Data, VT_TX...35) # Column AI
+      inspect_categorical(CNMA_Data, VT_TX...35) # Column AI (green highlight, thus presumed to be "true" VT_TX)
+      inspect_categorical(CNMA_Data, VT_TX...38) # Column AL (red highlight, actually within "Vocabulary")
+      CNMA_Data %>% count(VT_TX...35, VT_TX...38) %>% print(n = Inf)   
       
-      inspect_categorical(CNMA_Data, ME_COMP) # Column CE
-      inspect_categorical(CNMA_Data, VT_COMP...84) # Column CF
+      inspect_categorical(CNMA_Data, ME_COMP) # Column CE (green highlight, thus presumed to be "true" VT_TX)
+      inspect_categorical(CNMA_Data, VT_COMP...84) # Column CF (green highlight, thus presumed to be "true" COMP_TX)
+      inspect_categorical(CNMA_Data, VT_COMP...87) # Column CI (red highlight, actually within "Vocabulary")
+      CNMA_Data %>% count(VT_COMP...84, VT_COMP...87) %>% print(n = Inf)
       
       CNMA_Data %>% count(ME_TX, VT_TX...35, ME_COMP, VT_COMP...84) %>% print(n = Inf)   
       
@@ -153,8 +159,10 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
 # Additional modifications to NMA subset analysis data for running NMA with metafor  
   
   ## Correct duplicate column names
-  CNMA_Data <- CNMA_Data %>% rename(VT_TX = VT_TX...35)
-  CNMA_Data <- CNMA_Data %>% rename(VT_COMP = VT_COMP...84)
+  CNMA_Data %>% count(VT_TX...35, VT_COMP...84) %>% print(n = Inf)
+  CNMA_Data <- CNMA_Data %>% rename(VT_TX = VT_TX...35) # Column AI (green highlight, thus presumed to be "true" VT_TX, not VT...38 which is highlighted in red)
+  CNMA_Data <- CNMA_Data %>% rename(VT_COMP = VT_COMP...84) # Column CF (green highlight, thus presumed to be "true" COMP_TX, not VT...87 which is highlighted in red))
+  CNMA_Data %>% count(VT_TX, VT_COMP) %>% print(n = Inf)
   
   ## Replace n/A with zeros in components   
   
@@ -166,22 +174,36 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
       ))
   } 
   
-  CNMA_Data <- replace_na_specific(CNMA_Data, c("NL_TX", "N_TX", "NL_COMP", "N_COMP"))
-  CNMA_Data <- replace_na_specific(CNMA_Data, c("R_TX", "RV_TX", "R_COMP", "RV_COMP"))
-  CNMA_Data <- replace_na_specific(CNMA_Data, c("ME_TX", "VT_TX", "ME_COMP", "VT_COMP"))
-  CNMA_Data <- replace_na_specific(CNMA_Data, c("WTS_TX", "SV_TX", "WTS_COMP", "SV_COMP"))
-  CNMA_Data <- replace_na_specific(CNMA_Data, c("FF_TX", "FO_TX", "FF_COMP", "FO_COMP"))
-  CNMA_Data <- replace_na_specific(CNMA_Data, c("BR_TX", "MR_TX", "PREXTRA_TX", "BX_TX", "BR_COMP", "MR_COMP", "PREXTRA_COMP", "BX_COMP"))
-  CNMA_Data <- replace_na_specific(CNMA_Data, c("WXA_TX", "WXP_TX", "WXA_COMP", "WXP_COMP"))
-  CNMA_Data <- replace_na_specific(CNMA_Data, c("MS2_TX", "WPS_TX", "WP2_TX", "MS_TX", "BFS_TX", "MS2_COMP", "WPS_COMP", "WP2_COMP", "MS_COMP", "BFS_COMP"))
-  
   CNMA_Data %>% count(NL_TX, N_TX, NL_COMP, N_COMP) %>% print(n = Inf)
+  CNMA_Data <- replace_na_specific(CNMA_Data, c("NL_TX", "N_TX", "NL_COMP", "N_COMP"))  
+  CNMA_Data %>% count(NL_TX, N_TX, NL_COMP, N_COMP) %>% print(n = Inf)
+  
   CNMA_Data %>% count(R_TX, RV_TX, R_COMP, RV_COMP) %>% print(n = Inf)  
+  CNMA_Data <- replace_na_specific(CNMA_Data, c("R_TX", "RV_TX", "R_COMP", "RV_COMP"))  
+  CNMA_Data %>% count(R_TX, RV_TX, R_COMP, RV_COMP) %>% print(n = Inf) 
+  
   CNMA_Data %>% count(ME_TX, VT_TX, ME_COMP, VT_COMP) %>% print(n = Inf) 
+  CNMA_Data <- replace_na_specific(CNMA_Data, c("ME_TX", "VT_TX", "ME_COMP", "VT_COMP"))
+  CNMA_Data %>% count(ME_TX, VT_TX, ME_COMP, VT_COMP) %>% print(n = Inf)   
+  
   CNMA_Data %>% count(WTS_TX, SV_TX, WTS_COMP, SV_COMP) %>% print(n = Inf)
+  CNMA_Data <- replace_na_specific(CNMA_Data, c("WTS_TX", "SV_TX", "WTS_COMP", "SV_COMP"))  
+  CNMA_Data %>% count(WTS_TX, SV_TX, WTS_COMP, SV_COMP) %>% print(n = Inf)
+  
   CNMA_Data %>% count(FF_TX, FO_TX, FF_COMP, FO_COMP) %>% print(n = Inf)
+  CNMA_Data <- replace_na_specific(CNMA_Data, c("FF_TX", "FO_TX", "FF_COMP", "FO_COMP"))  
+  CNMA_Data %>% count(FF_TX, FO_TX, FF_COMP, FO_COMP) %>% print(n = Inf)  
+  
   CNMA_Data %>% count(BR_TX, MR_TX, PREXTRA_TX, BX_TX, BR_COMP, MR_COMP, PREXTRA_COMP, BX_COMP) %>% print(n = Inf)
+  CNMA_Data <- replace_na_specific(CNMA_Data, c("BR_TX", "MR_TX", "PREXTRA_TX", "BX_TX", "BR_COMP", "MR_COMP", "PREXTRA_COMP", "BX_COMP"))  
+  CNMA_Data %>% count(BR_TX, MR_TX, PREXTRA_TX, BX_TX, BR_COMP, MR_COMP, PREXTRA_COMP, BX_COMP) %>% print(n = Inf)  
+  
   CNMA_Data %>% count(WXA_TX, WXP_TX, WXA_COMP, WXP_COMP) %>% print(n = Inf)   
+  CNMA_Data <- replace_na_specific(CNMA_Data, c("WXA_TX", "WXP_TX", "WXA_COMP", "WXP_COMP"))  
+  CNMA_Data %>% count(WXA_TX, WXP_TX, WXA_COMP, WXP_COMP) %>% print(n = Inf)  
+  
+  CNMA_Data %>% count(MS2_TX, WPS_TX, WP2_TX, MS_TX, BFS_TX, MS2_COMP, WPS_COMP, WP2_COMP, MS_COMP, BFS_COMP) %>% print(n = Inf) 
+  CNMA_Data <- replace_na_specific(CNMA_Data, c("MS2_TX", "WPS_TX", "WP2_TX", "MS_TX", "BFS_TX", "MS2_COMP", "WPS_COMP", "WP2_COMP", "MS_COMP", "BFS_COMP"))
   CNMA_Data %>% count(MS2_TX, WPS_TX, WP2_TX, MS_TX, BFS_TX, MS2_COMP, WPS_COMP, WP2_COMP, MS_COMP, BFS_COMP) %>% print(n = Inf) 
       
   ## Create intervention and comparison bundles  
