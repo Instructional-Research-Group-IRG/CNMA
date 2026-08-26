@@ -325,8 +325,10 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
   CNMA_Data %>% count(BFS_TX, BFS_COMP, BFS) %>% print(n = Inf)  
   
   ## Check for mirrored contrasts and lone components
+  
   # Note: Mirrored contrasts are those that have the exact same (bundle of) components on both sides of the contrast.
   #       Lone components are those that appear in a mirrored contrast and do not appear in any other T v BAU contrast.
+  
   tabyl(CNMA_Data$intervention_component_bundle)
   tabyl(CNMA_Data$comparison_component_bundle)
   CNMA_Data %>% count(intervention_component_bundle, comparison_component_bundle) %>% print(n = Inf) 
@@ -347,11 +349,16 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
   tabyl(CNMA_Data$mirrored_contrast)
   CNMA_Data %>% count(mirrored_contrast, intervention_component_bundle_clean, comparison_component_bundle_clean) %>% print(n = Inf)
   
-  ## Create dataset without mirrored contrasts
-  CNMA_Data_nomirrors <- CNMA_Data %>% filter(mirrored_contrast == "NO")
-  tabyl(CNMA_Data_nomirrors$mirrored_contrast)
-  CNMA_Data_nomirrors %>% count(mirrored_contrast, intervention_component_bundle_clean, comparison_component_bundle_clean) %>% print(n = Inf)
-  
+    ### Create dataset without mirrored contrasts
+    CNMA_Data_nomirrors <- CNMA_Data %>% filter(mirrored_contrast == "NO")
+    tabyl(CNMA_Data_nomirrors$mirrored_contrast)
+    CNMA_Data_nomirrors %>% count(mirrored_contrast, intervention_component_bundle_clean, comparison_component_bundle_clean) %>% print(n = Inf)
+    
+    ### Look for lone compnents
+    CNMA_Data_lc <- CNMA_Data %>% dplyr::select(mirrored_contrast, intervention_component_bundle_clean, comparison_component_bundle_clean)
+    CNMA_Data_lc <- CNMA_Data_lc %>% arrange(mirrored_contrast)
+    print(CNMA_Data_lc, n=Inf)
+      
   
 #================================================================= CNMA =================================================================#
   
@@ -380,11 +387,11 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
         
   ## Run additive cNMA with the unique intervention components as moderators  
 
-    ### Fit additive CNMA model assuming consistency (tau^2_omega=0)
+    ### Fit additive CNMA model
     res_mod_icW_nomirrors_cnma <- rma.mv(effect_size, V_list, 
                             # mods = ~ NL + N + R + RV + ME + VT + WTS + SV + FF + FO + BR + MR + PREXTRA + BX + WXA + WXP + MS2 + WPS + WP2 + BFS - 1, # Full list of available contrast-coded components for reference.
                             mods = ~ NL + R + ME + VT + WTS + FF + BR + MR + WXA + MS2 + BFS - 1, # BAU is excluded to serve as the reference level for the comparisons.
-                            random = ~ 1 | study_id/es_id, # Not necessary to show that we do not need to include other dependencies and can reference previous investigations into this and related assumptions taken under NMA work
+                            random = ~ 1 | study_id/es_id,
                             rho=0.60, 
                             data=CNMA_Data_subset_icW_nomirrors)
     summary(res_mod_icW_nomirrors_cnma) 
@@ -469,11 +476,11 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
     
   ## Run additive cNMA with the unique intervention components as moderators  
     
-    ### Fit additive CNMA model assuming consistency (tau^2_omega=0)
+    ### Fit additive CNMA model
     res_mod_icW_cnma <- rma.mv(effect_size, V_list, 
                                # mods = ~ NL + N + R + RV + ME + VT + WTS + SV + FF + FO + BR + MR + PREXTRA + BX + WXA + WXP + MS2 + WPS + WP2 + BFS - 1, # Full list of available contrast-coded components for reference.
                                mods = ~ NL + R + ME + VT + WTS + FF + BR + MR + WXA + MS2 + BFS - 1, # BAU is excluded to serve as the reference level for the comparisons.
-                               random = ~ 1 | study_id/es_id, # Not necessary to show that we do not need to include other dependencies and can reference previous investigations into this and related assumptions taken under NMA work
+                               random = ~ 1 | study_id/es_id,
                                rho=0.60, 
                                data=CNMA_Data_subset_icW)
     summary(res_mod_icW_cnma) 
@@ -561,11 +568,11 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
     
   ## Run additive cNMA with the unique intervention components as moderators  
     
-    ### Fit additive CNMA model assuming consistency (tau^2_omega=0)
+    ### Fit additive CNMA model
     res_mod_icR_nomirrors_cnma <- rma.mv(effect_size, V_list, 
                                # mods = ~ NL + N + R + RV + ME + VT + WTS + SV + FF + FO + BR + MR + PREXTRA + BX + WXA + WXP + MS2 + WPS + WP2 + BFS - 1, # Full list of available contrast-coded components for reference.
                                mods = ~ NL + R + ME + VT + WTS + FF + BR + MR + WXA + MS2 + BFS - 1, # BAU is excluded to serve as the reference level for the comparisons.
-                               random = ~ 1 | study_id/es_id, # Not necessary to show that we do not need to include other dependencies and can reference previous investigations into this and related assumptions taken under NMA work
+                               random = ~ 1 | study_id/es_id,
                                rho=0.60, 
                                data=CNMA_Data_subset_icR_nomirrors)
     summary(res_mod_icR_nomirrors_cnma) 
@@ -650,11 +657,11 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
     
   ## Run additive cNMA with the unique intervention components as moderators  
     
-    ### Fit additive CNMA model assuming consistency (tau^2_omega=0)
+    ### Fit additive CNMA model
     res_mod_icR_cnma <- rma.mv(effect_size, V_list, 
                                # mods = ~ NL + N + R + RV + ME + VT + WTS + SV + FF + FO + BR + MR + PREXTRA + BX + WXA + WXP + MS2 + WPS + WP2 + BFS - 1, # Full list of available contrast-coded components for reference.
                                mods = ~ NL + R + ME + VT + WTS + FF + BR + MR + WXA + MS2 + BFS - 1, # BAU is excluded to serve as the reference level for the comparisons.
-                               random = ~ 1 | study_id/es_id, # Not necessary to show that we do not need to include other dependencies and can reference previous investigations into this and related assumptions taken under NMA work
+                               random = ~ 1 | study_id/es_id,
                                rho=0.60, 
                                data=CNMA_Data_subset_icR)
     summary(res_mod_icR_cnma) 
@@ -723,41 +730,43 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
     
 # Execute network meta-analysis (NMA) using a contrast-based random-effects model using BAU as the reference condition: intervention_content == "Whole Numbers (W)"
     
-  #### NO MIRRORED CONTRASTS ####
+    
+  #################################### NO MIRRORED CONTRASTS ####################################
+    
     
   ## Subset analysis data frame further to just the Whole Numbers (W) intervention content (icW)
   tabyl(CNMA_Data_nomirrors$intervention_content)
-  NMA_Data_subset_icW <- CNMA_Data_nomirrors %>% filter(intervention_content == "W")
-  tabyl(NMA_Data_subset_icW$intervention_content)
-  NMA_Data_subset_icW_c <- NMA_Data_subset_icW %>% distinct(contrast_id, .keep_all = TRUE)
+  NMA_Data_subset_icW_nomirrors <- CNMA_Data_nomirrors %>% filter(intervention_content == "W")
+  tabyl(NMA_Data_subset_icW_nomirrors$intervention_content)
+  NMA_Data_subset_icW_nomirrors_c <- NMA_Data_subset_icW_nomirrors %>% distinct(contrast_id, .keep_all = TRUE)
     
   ## Add contrast matrix to dataset
-  NMA_Data_subset_icW <- contrmat(NMA_Data_subset_icW, grp1="intervention_component_bundle_clean2", grp2="comparison_component_bundle_clean2")
-  #write_csv(NMA_Data_subset_icW, file = "NMA_Data_subset_icW.csv")
-  #NMA_Data_subset_icW %>% count(intervention_component_bundle_clean2, comparison_component_bundle_clean2) %>% print(n = Inf)
+  NMA_Data_subset_icW_nomirrors <- contrmat(NMA_Data_subset_icW_nomirrors, grp1="intervention_component_bundle_clean", grp2="comparison_component_bundle_clean")
+  #write_csv(NMA_Data_subset_icW_nomirrors, file = "NMA_Data_subset_icW_nomirrors.csv")
+  #NMA_Data_subset_icW_nomirrors %>% count(intervention_component_bundle_clean2, comparison_component_bundle_clean2) %>% print(n = Inf)
     
   ## Calculate the variance-covariance matrix for multi-treatment studies
-  V_list <- vcalc(variance, cluster= study_id, obs= measure_name, type= domain, rho=c(0.6, 0.6), grp1=intervention_component_bundle, grp2=comparison_component_bundle, w1=intervention_n, w2=comparison_n, data=NMA_Data_subset_icW)
+  V_list <- vcalc(variance, cluster= study_id, obs= measure_name, type= domain, rho=c(0.6, 0.6), grp1=intervention_component_bundle, grp2=comparison_component_bundle, w1=intervention_n, w2=comparison_n, data=NMA_Data_subset_icW_nomirrors)
   V_list    
-  V_list_icW <- data.frame(V_list)
-  #write_csv(V_list_icW, 'V_list_icW.csv')
+  V_list_icW_nomirrors <- data.frame(V_list)
+  #write_csv(V_list_icW_nomirrors, 'V_list_icW_nomirrors.csv')
     
-  ## Run additive cNMA with the unique intervention components as moderators  
+  ##Run standard NMA with the unique interventions bundles as moderators
     
-    ### Fit additive CNMA model assuming consistency (tau^2_omega=0)
-    res_mod_icW_nma <- rma.mv(effect_size, V_list, 
+    ### Fit NMA model assuming consistency (tau^2_omega=0)
+    res_mod_icW_nomirrors_nma <- rma.mv(effect_size, V_list, 
                                mods = ~ BR.MR +	BR.MR.MS2 + FF + FF.BR.MS2.BFS + FF.MR + FF.MR.BFS + FF.MR.MS2 + FF.MS2.BFS + ME.FF.MS2.BFS + NL.R.FF.BR.BFS + R.BFS + R.BR.BFS + R.BR.MR + R.BR.MR.BFS + R.FF.BFS + R.FF.BR.BFS + R.FF.BR.MR.BFS + R.FF.BR.MS2.BFS + R.FF.MR.MS2 + R.MS2 + R.VT.BFS + R.VT.BR.WXA.MS2 + R.VT.FF.BR.MR.BFS + R.VT.FF.BR.MR.MS2.BFS + R.VT.FF.BR.MS2.BFS + R.VT.FF.BR.WXA.MS2.BFS + R.VT.FF.MS2.BFS + R.VT.MS2 + R.VT.MS2.BFS + R.VT.WTS.FF.BR.MR.MS2 + R.VT.WTS.FF.BR.WXA.MS2.BFS + R.VT.WTS.MR.MS2 + R.WTS.FF.BR.BFS + VT + VT.MS2 - 1, # BAU is excluded to serve as the reference level for the comparisons.
-                               random = ~ 1 | study_id/es_id, # Not necessary to show that we do not need to include other dependencies and can reference previous investigations into this and related assumptions taken under NMA work
+                               random = ~ 1 | study_id/es_id,
                                rho=0.60, 
-                               data=NMA_Data_subset_icW)
-    summary(res_mod_icW_nma) 
+                               data=NMA_Data_subset_icW_nomirrors)
+    summary(res_mod_icW_nomirrors_nma) 
     
     ### Estimate all pairwise differences between treatments
-    contr <- data.frame(t(combn(names(coef(res_mod_icW_nma)), 2)))
+    contr <- data.frame(t(combn(names(coef(res_mod_icW_nomirrors_nma)), 2)))
     contr <- contrmat(contr, "X1", "X2")
     rownames(contr) <- paste(contr$X1, "-", contr$X2)
     contr <- as.matrix(contr[-c(1:2)])
-    sav <- predict(res_mod_icW_nma, newmods=contr)
+    sav <- predict(res_mod_icW_nomirrors_nma, newmods=contr)
     sav[["slab"]] <- rownames(contr)
     sav
     
@@ -780,14 +789,14 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
     lt_info_df3 <- lt_info_df2 %>% pivot_wider(id_cols= "comp1", names_from= "comp2", values_from = "pred_cis") #This creates the league table formatted as "left vs top".
     lt_info_df3 <- rename(lt_info_df3, Intervention = comp1)
     print(lt_info_df3)
-    #write_csv(lt_info_df3, file = "nma_league_table_icW.csv")
-    #write_xlsx(lt_info_df3, 'nma_league_table_icW.xlsx')
+    #write_csv(lt_info_df3, file = "nma_league_table_icW_nomirrors.csv")
+    #write_xlsx(lt_info_df3, 'nma_league_table_icW_nomirrors.xlsx')
     
     ### Compute p-values
-    contr <- data.frame(t(combn(c(names(coef(res_mod_icW_nma)),"BAU"), 2))) # add "BAU" to contrast matrix / Likely to remove this from output/forest plot
+    contr <- data.frame(t(combn(c(names(coef(res_mod_icW_nomirrors_nma)),"BAU"), 2))) # add "BAU" to contrast matrix / Likely to remove this from output/forest plot
     contr <- contrmat(contr, "X1", "X2", last="BAU", append=FALSE)
-    b <- c(coef(res_mod_icW_nma),0) # add 0 for 'BAU' (the "reference treatment" excluded from the mods argument of the rma.mv function executing the NMA above)
-    vb <- bldiag(vcov(res_mod_icW_nma),0) # add 0 row/column for 'BAU' (the "reference treatment" excluded from the mods argument of the rma.mv function executing the NMA above)
+    b <- c(coef(res_mod_icW_nomirrors_nma),0) # add 0 for 'BAU' (the "reference treatment" excluded from the mods argument of the rma.mv function executing the NMA above)
+    vb <- bldiag(vcov(res_mod_icW_nomirrors_nma),0) # add 0 row/column for 'BAU' (the "reference treatment" excluded from the mods argument of the rma.mv function executing the NMA above)
     pvals <- apply(contr, 1, function(x) pnorm((x%*%b) / sqrt(t(x)%*%vb%*%x)))
     pvals
     
@@ -802,51 +811,54 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
     pscores
     
     ### Add P-scores to model output object
-    res_mod_icW_nma_df <- tidy(res_mod_icW_nma, conf.int = TRUE)
+    res_mod_icW_nomirrors_nma_df <- tidy(res_mod_icW_nomirrors_nma, conf.int = TRUE)
     pscores_df <- cbind(term = rownames(pscores), as.data.frame(pscores))
-    res_mod_icW_nma_pscore <- res_mod_icW_nma_df %>% left_join(pscores_df, by = c("term"))
-    res_mod_icW_nma_pscore <- res_mod_icW_nma_pscore %>% rename(intervention = term, se = std.error, zval = statistic, pval = p.value, ci.lb = conf.low, ci.ub = conf.high,  Pscore = V1)
-    print(res_mod_icW_nma_pscore, n=Inf)
-    res_mod_icW_nma_pscore <- res_mod_icW_nma_pscore %>% arrange(desc(Pscore))
-    print(res_mod_icW_nma_pscore, n=Inf)    
+    res_mod_icW_nomirrors_nma_pscore <- res_mod_icW_nomirrors_nma_df %>% left_join(pscores_df, by = c("term"))
+    res_mod_icW_nomirrors_nma_pscore <- res_mod_icW_nomirrors_nma_pscore %>% rename(intervention = term, se = std.error, zval = statistic, pval = p.value, ci.lb = conf.low, ci.ub = conf.high,  Pscore = V1)
+    print(res_mod_icW_nomirrors_nma_pscore, n=Inf)
+    res_mod_icW_nomirrors_nma_pscore <- res_mod_icW_nomirrors_nma_pscore %>% arrange(desc(Pscore))
+    print(res_mod_icW_nomirrors_nma_pscore, n=Inf)    
 
+    
 # Execute network meta-analysis (NMA) using a contrast-based random-effects model using BAU as the reference condition: intervention_content == "Rational Numbers (R)"
     
-  #### NO MIRRORED CONTRASTS ####
     
-  ## Subset analysis data frame further to just the Rational Numbers (R) intervention content (icR)
+  #################################### NO MIRRORED CONTRASTS ####################################
+    
+    
+  ## Subset analysis data frame further to just the Rational Numbers (R) intervention content (icR_nomirrors)
   tabyl(CNMA_Data_nomirrors$intervention_content)
-  NMA_Data_subset_icR <- CNMA_Data_nomirrors %>% filter(intervention_content == "R")
-  tabyl(NMA_Data_subset_icR$intervention_content)
-  NMA_Data_subset_icR_c <- NMA_Data_subset_icR %>% distinct(contrast_id, .keep_all = TRUE)
+  NMA_Data_subset_icR_nomirrors <- CNMA_Data_nomirrors %>% filter(intervention_content == "R")
+  tabyl(NMA_Data_subset_icR_nomirrors$intervention_content)
+  NMA_Data_subset_icR_nomirrors_c <- NMA_Data_subset_icR_nomirrors %>% distinct(contrast_id, .keep_all = TRUE)
     
   ## Add contrast matrix to dataset
-  NMA_Data_subset_icR <- contrmat(NMA_Data_subset_icR, grp1="intervention_component_bundle_clean2", grp2="comparison_component_bundle_clean2")
-  write_csv(NMA_Data_subset_icR, file = "NMA_Data_subset_icR.csv")
-  #NMA_Data_subset_icR %>% count(intervention_component_bundle_clean2, comparison_component_bundle_clean2) %>% print(n = Inf)
+  NMA_Data_subset_icR_nomirrors <- contrmat(NMA_Data_subset_icR_nomirrors, grp1="intervention_component_bundle_clean", grp2="comparison_component_bundle_clean")
+  #write_csv(NMA_Data_subset_icR_nomirrors, file = "NMA_Data_subset_icR_nomirrors.csv")
+  #NMA_Data_subset_icR_nomirrors %>% count(intervention_component_bundle_clean2, comparison_component_bundle_clean2) %>% print(n = Inf)
     
   ## Calculate the variance-covariance matrix for multi-treatment studies
-  V_list <- vcalc(variance, cluster= study_id, obs= measure_name, type= domain, rho=c(0.6, 0.6), grp1=intervention_component_bundle, grp2=comparison_component_bundle, w1=intervention_n, w2=comparison_n, data=NMA_Data_subset_icR)
+  V_list <- vcalc(variance, cluster= study_id, obs= measure_name, type= domain, rho=c(0.6, 0.6), grp1=intervention_component_bundle, grp2=comparison_component_bundle, w1=intervention_n, w2=comparison_n, data=NMA_Data_subset_icR_nomirrors)
   V_list    
-  V_list_icR <- data.frame(V_list)
-  #write_csv(V_list_icR, 'V_list_icR.csv')
+  V_list_icR_nomirrors <- data.frame(V_list)
+  #write_csv(V_list_icR_nomirrors, 'V_list_icR_nomirrors.csv')
     
-  ## Run additive cNMA with the unique intervention components as moderators  
+  ##Run standard NMA with the unique interventions bundles as moderators  
     
-    ### Fit additive CNMA model assuming consistency (tau^2_omega=0)
-    res_mod_icR_nma <- rma.mv(effect_size, V_list, 
+    ### Fit NMA model assuming consistency (tau^2_omega=0)
+    res_mod_icR_nomirrors_nma <- rma.mv(effect_size, V_list, 
                               mods = ~ ME.VT.WXA + NL.R + NL.R.ME.VT.WTS.FF.BR.MR.MS2 + NL.R.ME.VT.WTS.FF.MS2 + NL.R.ME.VT.WTS.MS2 + NL.R.VT.FF.WXA.MS2 + NL.R.VT.WTS.BR.MR.MS2 + NL.R.VT.WTS.FF.BR.MR.MS2 + NL.R.VT.WTS.FF.BR.MR.MS2.BFS + NL.R.VT.WTS.MS2 + R.ME.VT.MS2 + R.MS2 + R.VT + R.WTS.FF.BR.MS2.BFS + WTS.FF - 1, # BAU is excluded to serve as the reference level for the comparisons.
-                              random = ~ 1 | study_id/es_id, # Not necessary to show that we do not need to include other dependencies and can reference previous investigations into this and related assumptions taken under NMA work
+                              random = ~ 1 | study_id/es_id,
                               rho=0.60, 
-                              data=NMA_Data_subset_icR)
-    summary(res_mod_icR_nma) 
+                              data=NMA_Data_subset_icR_nomirrors)
+    summary(res_mod_icR_nomirrors_nma) 
     
     ### Estimate all pairwise differences between treatments
-    contr <- data.frame(t(combn(names(coef(res_mod_icR_nma)), 2)))
+    contr <- data.frame(t(combn(names(coef(res_mod_icR_nomirrors_nma)), 2)))
     contr <- contrmat(contr, "X1", "X2")
     rownames(contr) <- paste(contr$X1, "-", contr$X2)
     contr <- as.matrix(contr[-c(1:2)])
-    sav <- predict(res_mod_icR_nma, newmods=contr)
+    sav <- predict(res_mod_icR_nomirrors_nma, newmods=contr)
     sav[["slab"]] <- rownames(contr)
     sav
     
@@ -869,14 +881,14 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
     lt_info_df3 <- lt_info_df2 %>% pivot_wider(id_cols= "comp1", names_from= "comp2", values_from = "pred_cis") #This creates the league table formatted as "left vs top".
     lt_info_df3 <- rename(lt_info_df3, Intervention = comp1)
     print(lt_info_df3)
-    #write_csv(lt_info_df3, file = "nma_league_table_icR.csv")
-    #write_xlsx(lt_info_df3, 'nma_league_table_icR.xlsx')
+    #write_csv(lt_info_df3, file = "nma_league_table_icR_nomirrors.csv")
+    #write_xlsx(lt_info_df3, 'nma_league_table_icR_nomirrors.xlsx')
     
     ### Compute p-values
-    contr <- data.frame(t(combn(c(names(coef(res_mod_icR_nma)),"BAU"), 2))) # add "BAU" to contrast matrix / Likely to remove this from output/forest plot
+    contr <- data.frame(t(combn(c(names(coef(res_mod_icR_nomirrors_nma)),"BAU"), 2))) # add "BAU" to contrast matrix / Likely to remove this from output/forest plot
     contr <- contrmat(contr, "X1", "X2", last="BAU", append=FALSE)
-    b <- c(coef(res_mod_icR_nma),0) # add 0 for 'BAU' (the "reference treatment" excluded from the mods argument of the rma.mv function executing the NMA above)
-    vb <- bldiag(vcov(res_mod_icR_nma),0) # add 0 row/column for 'BAU' (the "reference treatment" excluded from the mods argument of the rma.mv function executing the NMA above)
+    b <- c(coef(res_mod_icR_nomirrors_nma),0) # add 0 for 'BAU' (the "reference treatment" excluded from the mods argument of the rma.mv function executing the NMA above)
+    vb <- bldiag(vcov(res_mod_icR_nomirrors_nma),0) # add 0 row/column for 'BAU' (the "reference treatment" excluded from the mods argument of the rma.mv function executing the NMA above)
     pvals <- apply(contr, 1, function(x) pnorm((x%*%b) / sqrt(t(x)%*%vb%*%x)))
     pvals
     
@@ -891,10 +903,10 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
     pscores
     
     ### Add P-scores to model output object
-    res_mod_icR_nma_df <- tidy(res_mod_icR_nma, conf.int = TRUE)
+    res_mod_icR_nomirrors_nma_df <- tidy(res_mod_icR_nomirrors_nma, conf.int = TRUE)
     pscores_df <- cbind(term = rownames(pscores), as.data.frame(pscores))
-    res_mod_icR_nma_pscore <- res_mod_icR_nma_df %>% left_join(pscores_df, by = c("term"))
-    res_mod_icR_nma_pscore <- res_mod_icR_nma_pscore %>% rename(intervention = term, se = std.error, zval = statistic, pval = p.value, ci.lb = conf.low, ci.ub = conf.high,  Pscore = V1)
-    print(res_mod_icR_nma_pscore, n=Inf)   
-    res_mod_icR_nma_pscore <- res_mod_icR_nma_pscore %>% arrange(desc(Pscore))
-    print(res_mod_icR_nma_pscore, n=Inf)   
+    res_mod_icR_nomirrors_nma_pscore <- res_mod_icR_nomirrors_nma_df %>% left_join(pscores_df, by = c("term"))
+    res_mod_icR_nomirrors_nma_pscore <- res_mod_icR_nomirrors_nma_pscore %>% rename(intervention = term, se = std.error, zval = statistic, pval = p.value, ci.lb = conf.low, ci.ub = conf.high,  Pscore = V1)
+    print(res_mod_icR_nomirrors_nma_pscore, n=Inf)   
+    res_mod_icR_nomirrors_nma_pscore <- res_mod_icR_nomirrors_nma_pscore %>% arrange(desc(Pscore))
+    print(res_mod_icR_nomirrors_nma_pscore, n=Inf)   
