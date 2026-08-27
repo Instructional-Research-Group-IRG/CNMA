@@ -380,7 +380,7 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
   #Note: Contrast-coded columns for each component were created above.
   
   ## Calculate the variance-covariance matrix for multi-treatment studies
-  V_list <- vcalc(variance, cluster= study_id, obs= measure_name, type= domain, rho=c(0.6, 0.6), grp1=intervention_component_bundle, grp2=comparison_component_bundle, w1=intervention_n, w2=comparison_n, data=CNMA_Data_subset_icW_nomirrors)
+  V_list <- vcalc(variance, cluster= study_id, obs= es_id, rho=0.6, grp1=intervention_component_bundle, grp2=comparison_component_bundle, w1=intervention_n, w2=comparison_n, data=CNMA_Data_subset_icW_nomirrors)
   V_list    
   V_list_icW_nomirrors <- data.frame(V_list)
   write_csv(V_list_icW_nomirrors, 'V_list_icW_nomirrors.csv')
@@ -391,7 +391,8 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
     res_mod_icW_nomirrors_cnma <- rma.mv(effect_size, V_list, 
                             # mods = ~ NL + N + R + RV + ME + VT + WTS + SV + FF + FO + BR + MR + PREXTRA + BX + WXA + WXP + MS2 + WPS + WP2 + BFS - 1, # Full list of available contrast-coded components for reference.
                             mods = ~ NL + R + ME + VT + WTS + FF + BR + MR + WXA + MS2 + BFS - 1, # BAU is excluded to serve as the reference level for the comparisons.
-                            random = ~ 1 | study_id/es_id,
+                            #random = ~ 1 | study_id/es_id,
+                            random = ~ 1 | study_id/contrast_id/es_id,
                             rho=0.60, 
                             data=CNMA_Data_subset_icW_nomirrors)
     summary(res_mod_icW_nomirrors_cnma) 
@@ -469,7 +470,7 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
   #Note: Contrast-coded columns for each component were created above.
     
   ## Calculate the variance-covariance matrix for multi-treatment studies
-  V_list <- vcalc(variance, cluster= study_id, obs= measure_name, type= domain, rho=c(0.6, 0.6), grp1=intervention_component_bundle, grp2=comparison_component_bundle, w1=intervention_n, w2=comparison_n, data=CNMA_Data_subset_icW)
+  V_list <- vcalc(variance, cluster= study_id, obs= es_id, rho=0.6, grp1=intervention_component_bundle, grp2=comparison_component_bundle, w1=intervention_n, w2=comparison_n, data=CNMA_Data_subset_icW)
   V_list    
   V_list_icW <- data.frame(V_list)
   write_csv(V_list_icW, 'V_list_icW.csv')
@@ -480,7 +481,8 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
     res_mod_icW_cnma <- rma.mv(effect_size, V_list, 
                                # mods = ~ NL + N + R + RV + ME + VT + WTS + SV + FF + FO + BR + MR + PREXTRA + BX + WXA + WXP + MS2 + WPS + WP2 + BFS - 1, # Full list of available contrast-coded components for reference.
                                mods = ~ NL + R + ME + VT + WTS + FF + BR + MR + WXA + MS2 + BFS - 1, # BAU is excluded to serve as the reference level for the comparisons.
-                               random = ~ 1 | study_id/es_id,
+                               #random = ~ 1 | study_id/es_id,
+                               random = ~ 1 | study_id/contrast_id/es_id,
                                rho=0.60, 
                                data=CNMA_Data_subset_icW)
     summary(res_mod_icW_cnma) 
@@ -561,7 +563,7 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
   #Note: Contrast-coded columns for each component were created above.
     
   ## Calculate the variance-covariance matrix for multi-treatment studies
-  V_list <- vcalc(variance, cluster= study_id, obs= measure_name, type= domain, rho=c(0.6, 0.6), grp1=intervention_component_bundle, grp2=comparison_component_bundle, w1=intervention_n, w2=comparison_n, data=CNMA_Data_subset_icR_nomirrors)
+  V_list <- vcalc(variance, cluster= study_id, obs= es_id, rho=0.6, grp1=intervention_component_bundle, grp2=comparison_component_bundle, w1=intervention_n, w2=comparison_n, data=CNMA_Data_subset_icR_nomirrors)
   V_list    
   V_list_icR_nomirrors <- data.frame(V_list)
   write_csv(V_list_icR_nomirrors, 'V_list_icR_nomirrors.csv')
@@ -572,7 +574,8 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
     res_mod_icR_nomirrors_cnma <- rma.mv(effect_size, V_list, 
                                # mods = ~ NL + N + R + RV + ME + VT + WTS + SV + FF + FO + BR + MR + PREXTRA + BX + WXA + WXP + MS2 + WPS + WP2 + BFS - 1, # Full list of available contrast-coded components for reference.
                                mods = ~ NL + R + ME + VT + WTS + FF + BR + MR + WXA + MS2 + BFS - 1, # BAU is excluded to serve as the reference level for the comparisons.
-                               random = ~ 1 | study_id/es_id,
+                               #random = ~ 1 | study_id/es_id,
+                               random = ~ 1 | study_id/contrast_id/es_id,
                                rho=0.60, 
                                data=CNMA_Data_subset_icR_nomirrors)
     summary(res_mod_icR_nomirrors_cnma) 
@@ -650,7 +653,7 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
   #Note: Contrast-coded columns for each component were created above.
     
   ## Calculate the variance-covariance matrix for multi-treatment studies
-  V_list <- vcalc(variance, cluster= study_id, obs= measure_name, type= domain, rho=c(0.6, 0.6), grp1=intervention_component_bundle, grp2=comparison_component_bundle, w1=intervention_n, w2=comparison_n, data=CNMA_Data_subset_icR)
+  V_list <- vcalc(variance, cluster= study_id, obs= es_id, rho=0.6, grp1=intervention_component_bundle, grp2=comparison_component_bundle, w1=intervention_n, w2=comparison_n, data=CNMA_Data_subset_icR)
   V_list    
   V_list_icR <- data.frame(V_list)
   write_csv(V_list_icR, 'V_list_icR.csv')
@@ -661,7 +664,8 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
     res_mod_icR_cnma <- rma.mv(effect_size, V_list, 
                                # mods = ~ NL + N + R + RV + ME + VT + WTS + SV + FF + FO + BR + MR + PREXTRA + BX + WXA + WXP + MS2 + WPS + WP2 + BFS - 1, # Full list of available contrast-coded components for reference.
                                mods = ~ NL + R + ME + VT + WTS + FF + BR + MR + WXA + MS2 + BFS - 1, # BAU is excluded to serve as the reference level for the comparisons.
-                               random = ~ 1 | study_id/es_id,
+                               #random = ~ 1 | study_id/es_id,
+                               random = ~ 1 | study_id/contrast_id/es_id,
                                rho=0.60, 
                                data=CNMA_Data_subset_icR)
     summary(res_mod_icR_cnma) 
@@ -742,11 +746,11 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
     
   ## Add contrast matrix to dataset
   NMA_Data_subset_icW_nomirrors <- contrmat(NMA_Data_subset_icW_nomirrors, grp1="intervention_component_bundle_clean", grp2="comparison_component_bundle_clean")
-  #write_csv(NMA_Data_subset_icW_nomirrors, file = "NMA_Data_subset_icW_nomirrors.csv")
+  write_csv(NMA_Data_subset_icW_nomirrors, file = "NMA_Data_subset_icW_nomirrors.csv")
   #NMA_Data_subset_icW_nomirrors %>% count(intervention_component_bundle_clean2, comparison_component_bundle_clean2) %>% print(n = Inf)
     
   ## Calculate the variance-covariance matrix for multi-treatment studies
-  V_list <- vcalc(variance, cluster= study_id, obs= measure_name, type= domain, rho=c(0.6, 0.6), grp1=intervention_component_bundle, grp2=comparison_component_bundle, w1=intervention_n, w2=comparison_n, data=NMA_Data_subset_icW_nomirrors)
+  V_list <- vcalc(variance, cluster= study_id, obs= es_id, rho=0.6, grp1=intervention_component_bundle, grp2=comparison_component_bundle, w1=intervention_n, w2=comparison_n, data=NMA_Data_subset_icW_nomirrors)
   V_list    
   V_list_icW_nomirrors <- data.frame(V_list)
   #write_csv(V_list_icW_nomirrors, 'V_list_icW_nomirrors.csv')
@@ -756,7 +760,8 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
     ### Fit NMA model assuming consistency (tau^2_omega=0)
     res_mod_icW_nomirrors_nma <- rma.mv(effect_size, V_list, 
                                mods = ~ BR.MR +	BR.MR.MS2 + FF + FF.BR.MS2.BFS + FF.MR + FF.MR.BFS + FF.MR.MS2 + FF.MS2.BFS + ME.FF.MS2.BFS + NL.R.FF.BR.BFS + R.BFS + R.BR.BFS + R.BR.MR + R.BR.MR.BFS + R.FF.BFS + R.FF.BR.BFS + R.FF.BR.MR.BFS + R.FF.BR.MS2.BFS + R.FF.MR.MS2 + R.MS2 + R.VT.BFS + R.VT.BR.WXA.MS2 + R.VT.FF.BR.MR.BFS + R.VT.FF.BR.MR.MS2.BFS + R.VT.FF.BR.MS2.BFS + R.VT.FF.BR.WXA.MS2.BFS + R.VT.FF.MS2.BFS + R.VT.MS2 + R.VT.MS2.BFS + R.VT.WTS.FF.BR.MR.MS2 + R.VT.WTS.FF.BR.WXA.MS2.BFS + R.VT.WTS.MR.MS2 + R.WTS.FF.BR.BFS + VT + VT.MS2 - 1, # BAU is excluded to serve as the reference level for the comparisons.
-                               random = ~ 1 | study_id/es_id,
+                               #random = ~ 1 | study_id/es_id,
+                               random = ~ 1 | study_id/contrast_id/es_id,
                                rho=0.60, 
                                data=NMA_Data_subset_icW_nomirrors)
     summary(res_mod_icW_nomirrors_nma) 
@@ -789,7 +794,7 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
     lt_info_df3 <- lt_info_df2 %>% pivot_wider(id_cols= "comp1", names_from= "comp2", values_from = "pred_cis") #This creates the league table formatted as "left vs top".
     lt_info_df3 <- rename(lt_info_df3, Intervention = comp1)
     print(lt_info_df3)
-    #write_csv(lt_info_df3, file = "nma_league_table_icW_nomirrors.csv")
+    write_csv(lt_info_df3, file = "nma_league_table_icW_nomirrors.csv")
     #write_xlsx(lt_info_df3, 'nma_league_table_icW_nomirrors.xlsx')
     
     ### Compute p-values
@@ -834,11 +839,11 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
     
   ## Add contrast matrix to dataset
   NMA_Data_subset_icR_nomirrors <- contrmat(NMA_Data_subset_icR_nomirrors, grp1="intervention_component_bundle_clean", grp2="comparison_component_bundle_clean")
-  #write_csv(NMA_Data_subset_icR_nomirrors, file = "NMA_Data_subset_icR_nomirrors.csv")
+  write_csv(NMA_Data_subset_icR_nomirrors, file = "NMA_Data_subset_icR_nomirrors.csv")
   #NMA_Data_subset_icR_nomirrors %>% count(intervention_component_bundle_clean2, comparison_component_bundle_clean2) %>% print(n = Inf)
     
   ## Calculate the variance-covariance matrix for multi-treatment studies
-  V_list <- vcalc(variance, cluster= study_id, obs= measure_name, type= domain, rho=c(0.6, 0.6), grp1=intervention_component_bundle, grp2=comparison_component_bundle, w1=intervention_n, w2=comparison_n, data=NMA_Data_subset_icR_nomirrors)
+  V_list <- vcalc(variance, cluster= study_id, obs= es_id, rho=0.6, grp1=intervention_component_bundle, grp2=comparison_component_bundle, w1=intervention_n, w2=comparison_n, data=NMA_Data_subset_icR_nomirrors)
   V_list    
   V_list_icR_nomirrors <- data.frame(V_list)
   #write_csv(V_list_icR_nomirrors, 'V_list_icR_nomirrors.csv')
@@ -848,7 +853,8 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
     ### Fit NMA model assuming consistency (tau^2_omega=0)
     res_mod_icR_nomirrors_nma <- rma.mv(effect_size, V_list, 
                               mods = ~ ME.VT.WXA + NL.R + NL.R.ME.VT.WTS.FF.BR.MR.MS2 + NL.R.ME.VT.WTS.FF.MS2 + NL.R.ME.VT.WTS.MS2 + NL.R.VT.FF.WXA.MS2 + NL.R.VT.WTS.BR.MR.MS2 + NL.R.VT.WTS.FF.BR.MR.MS2 + NL.R.VT.WTS.FF.BR.MR.MS2.BFS + NL.R.VT.WTS.MS2 + R.ME.VT.MS2 + R.MS2 + R.VT + R.WTS.FF.BR.MS2.BFS + WTS.FF - 1, # BAU is excluded to serve as the reference level for the comparisons.
-                              random = ~ 1 | study_id/es_id,
+                              #random = ~ 1 | study_id/es_id,
+                              random = ~ 1 | study_id/contrast_id/es_id,
                               rho=0.60, 
                               data=NMA_Data_subset_icR_nomirrors)
     summary(res_mod_icR_nomirrors_nma) 
@@ -881,7 +887,7 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
     lt_info_df3 <- lt_info_df2 %>% pivot_wider(id_cols= "comp1", names_from= "comp2", values_from = "pred_cis") #This creates the league table formatted as "left vs top".
     lt_info_df3 <- rename(lt_info_df3, Intervention = comp1)
     print(lt_info_df3)
-    #write_csv(lt_info_df3, file = "nma_league_table_icR_nomirrors.csv")
+    write_csv(lt_info_df3, file = "nma_league_table_icR_nomirrors.csv")
     #write_xlsx(lt_info_df3, 'nma_league_table_icR_nomirrors.xlsx')
     
     ### Compute p-values
