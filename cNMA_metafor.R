@@ -156,7 +156,7 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
       
       CNMA_Data %>% count(MS2_TX, WPS_TX, WP2_TX, MS_TX, BFS_TX, MS2_COMP, WPS_COMP, WP2_COMP, MS_COMP, BFS_COMP) %>% print(n = Inf) 
       
-# Additional modifications to NMA subset analysis data for running NMA with metafor  
+# Additional modifications CNMA analysis dataset
   
   ## Correct duplicate column names
   CNMA_Data %>% count(VT_TX...35, VT_COMP...84) %>% print(n = Inf)
