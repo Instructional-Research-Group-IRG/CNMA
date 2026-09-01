@@ -94,11 +94,9 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
       
       #### Vocabulary
       inspect_categorical(CNMA_Data, WTS_TX) # Column AK
-      #inspect_categorical(CNMA_Data, VT_TX...38) # Column AL   
       inspect_categorical(CNMA_Data, SV_TX) # Column AM   
       
       inspect_categorical(CNMA_Data, WTS_COMP) # Column CH
-      #inspect_categorical(CNMA_Data, VT_COMP...87) # Column CI   
       CNMA_Data$SV_COMP <- as.numeric(CNMA_Data$SV_COMP) #Change from class "logical" to "numeric". Imports as logical because all vlaues "N/A".
       inspect_categorical(CNMA_Data, SV_COMP) # Column CJ
       
