@@ -85,16 +85,12 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
       
       #### Student Explanations- Taught or given opportunities
       inspect_categorical(CNMA_Data, ME_TX) # Column AH
-      inspect_categorical(CNMA_Data, VT_TX...35) # Column AI (green highlight, thus presumed to be "true" VT_TX)
-      inspect_categorical(CNMA_Data, VT_TX...38) # Column AL (red highlight, actually within "Vocabulary")
-      CNMA_Data %>% count(VT_TX...35, VT_TX...38) %>% print(n = Inf)   
+      inspect_categorical(CNMA_Data, ME_COMP) # Column CE 
       
-      inspect_categorical(CNMA_Data, ME_COMP) # Column CE (green highlight, thus presumed to be "true" VT_TX)
-      inspect_categorical(CNMA_Data, VT_COMP...84) # Column CF (green highlight, thus presumed to be "true" COMP_TX)
-      inspect_categorical(CNMA_Data, VT_COMP...87) # Column CI (red highlight, actually within "Vocabulary")
-      CNMA_Data %>% count(VT_COMP...84, VT_COMP...87) %>% print(n = Inf)
+      inspect_categorical(CNMA_Data, VT_TX) # Column AI
+      inspect_categorical(CNMA_Data, VT_COMP) # Column CF       
       
-      CNMA_Data %>% count(ME_TX, VT_TX...35, ME_COMP, VT_COMP...84) %>% print(n = Inf)   
+      CNMA_Data %>% count(ME_TX, VT_TX, ME_COMP, VT_COMP) %>% print(n = Inf)  
       
       #### Vocabulary
       inspect_categorical(CNMA_Data, WTS_TX) # Column AK
@@ -157,12 +153,6 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
       CNMA_Data %>% count(MS2_TX, WPS_TX, WP2_TX, MS_TX, BFS_TX, MS2_COMP, WPS_COMP, WP2_COMP, MS_COMP, BFS_COMP) %>% print(n = Inf) 
       
 # Additional modifications CNMA analysis dataset
-  
-  ## Correct duplicate column names
-  CNMA_Data %>% count(VT_TX...35, VT_COMP...84) %>% print(n = Inf)
-  CNMA_Data <- CNMA_Data %>% rename(VT_TX = VT_TX...35) # Column AI (green highlight, thus presumed to be "true" VT_TX, not VT...38 which is highlighted in red)
-  CNMA_Data <- CNMA_Data %>% rename(VT_COMP = VT_COMP...84) # Column CF (green highlight, thus presumed to be "true" COMP_TX, not VT...87 which is highlighted in red))
-  CNMA_Data %>% count(VT_TX, VT_COMP) %>% print(n = Inf)
   
   ## Replace n/A with zeros in components   
   
