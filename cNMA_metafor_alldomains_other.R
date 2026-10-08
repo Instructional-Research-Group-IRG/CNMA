@@ -1,0 +1,751 @@
+# This script performs a component network meta-analysis (cNMA) of mathematics education interventions using outcomes in the whole and ration numbers domains. 
+
+# Variable for defining outcome domain: intervention_content
+# Disaggregated by domain: Yes
+
+# Load required packages
+
+  ## Install 'devel' version of metafor package
+  #install.packages("remotes") 
+  #remotes::install_github("wviechtb/metafor") 
+  
+  ## Install and load other required packages
+  #install.packages("pacman") 
+  pacman::p_load(metafor, googlesheets4, dplyr, tidyr, skimr, testit, assertable, meta, netmeta, stringr, janitor, naniar, igraph, multcomp, broom, gridExtra, ggplot2, writexl, readr, grid, gridExtra, cowplot, extrafont, purrr)
+  
+# Load (read) data (i.e., copy data to 'dat')
+CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWVNLx1uksOu4QQlf2Xo7p4SZahPMio/edit?gid=931222966#gid=931222966&fvid=1356828720", sheet="Master Database") # <<CNMA master database>>
+  
+  ## Explore data  
+  CNMA_Data %>% count() 
+  head(CNMA_Data)
+  skim(CNMA_Data)
+  CNMA_Data$contrast_id <- as.character(CNMA_Data$contrast_id)
+  CNMA_Data %>% count(study_id, contrast_id) %>% print(n= Inf)
+  CNMA_Data %>% count(domain, measure_name) %>% print(n= Inf)
+  
+  ## Check ratings
+  CNMA_Data %>% group_by(wwc_rating) %>% count() %>% ungroup()
+  CNMA_Data %>% group_by(domain, wwc_rating) %>% count() %>% ungroup() %>% print(n= Inf)
+  CNMA_Data %>% group_by(intervention_content, wwc_rating) %>% count() %>% ungroup() %>% print(n= Inf)  
+  CNMA_Data %>% group_by(intervention_content, domain, wwc_rating) %>% count() %>% ungroup() %>% print(n= Inf)  
+  
+  ## Check for full duplicates
+  dups <- anyDuplicated(CNMA_Data)
+  assert("assert no duplicate entries", dups == 0) #No full duplicates.
+  
+  ## Check key columns/variables
+  
+    inspect_categorical <- function(data, column) {
+      col <- dplyr::pull(data, {{ column }})
+      print(class(col))
+      janitor::tabyl(col)
+    }
+    
+    inspect_continuous <- function(data, column) {
+      data %>%
+        summarise(
+          n_missing = sum(is.na({{ column }})),
+          n_nonmissing = sum(!is.na({{ column }})),
+          min  = min({{ column }}, na.rm = TRUE),
+          max  = max({{ column }}, na.rm = TRUE),
+          mean = mean({{ column }}, na.rm = TRUE)
+        )
+    }
+      
+    ### Domain
+    inspect_categorical(CNMA_Data, intervention_content)
+
+    ### Sample sizes
+    CNMA_Data %>% count(intervention_n, comparison_n, full_sample_size) %>% print(n = Inf)
+    
+    ### Statistics
+    inspect_continuous(CNMA_Data, effect_size)
+    inspect_continuous(CNMA_Data, standard_error)
+    
+    ### Components
+    
+      #### Number Line- Primary or one of many
+      inspect_categorical(CNMA_Data, NL_TX) # Column AB
+      inspect_categorical(CNMA_Data, N_TX) # Column AC
+      
+      inspect_categorical(CNMA_Data, NL_COMP) # Column BZ
+      inspect_categorical(CNMA_Data, N_COMP) # Column CA
+      
+      CNMA_Data %>% count(NL_TX, N_TX, NL_COMP, N_COMP) %>% print(n = Inf)
+      
+      #### Representations- Students use or view
+      inspect_categorical(CNMA_Data, R_TX) # Column AE
+      inspect_categorical(CNMA_Data, RV_TX) # Column AF
+      
+      inspect_categorical(CNMA_Data, R_COMP) # Column CC
+      inspect_categorical(CNMA_Data, RV_COMP) # Column CD
+      
+      CNMA_Data %>% count(R_TX, RV_TX, R_COMP, RV_COMP) %>% print(n = Inf)      
+      
+      #### Student Explanations- Taught or given opportunities
+      inspect_categorical(CNMA_Data, ME_TX) # Column AH
+      inspect_categorical(CNMA_Data, ME_COMP) # Column CF 
+      
+      inspect_categorical(CNMA_Data, VT_TX) # Column AI
+      inspect_categorical(CNMA_Data, VT_COMP) # Column CG       
+      
+      CNMA_Data %>% count(ME_TX, VT_TX, ME_COMP, VT_COMP) %>% print(n = Inf)  
+      
+      #### Vocabulary
+      inspect_categorical(CNMA_Data, WTS_TX) # Column AK
+      inspect_categorical(CNMA_Data, SV_TX) # Column AM   
+      
+      inspect_categorical(CNMA_Data, WTS_COMP) # Column CI
+      CNMA_Data$SV_COMP <- as.numeric(CNMA_Data$SV_COMP) #Change from class "logical" to "numeric". Imports as logical because all vlaues "N/A".
+      inspect_categorical(CNMA_Data, SV_COMP) # Column CK
+      
+      CNMA_Data %>% count(WTS_TX, SV_TX, WTS_COMP, SV_COMP) %>% print(n = Inf)
+      
+      #### Fluency- Feedback, goals, content, count of activities
+      inspect_categorical(CNMA_Data, FF_TX) # Column AO
+      inspect_categorical(CNMA_Data, FO_TX) # Column AP   
+
+      inspect_categorical(CNMA_Data, FF_COMP) # Column CM
+      inspect_categorical(CNMA_Data, FO_COMP) # Column CN  
+      
+      CNMA_Data %>% count(FF_TX, FO_TX, FF_COMP, FO_COMP) %>% print(n = Inf)
+      
+      #### Positive Reinforcement- Math or Behavior (Bx)
+      inspect_categorical(CNMA_Data, BR_TX) # Column BJ
+      inspect_categorical(CNMA_Data, MR_TX) # Column BK   
+      inspect_categorical(CNMA_Data, PREXTRA_TX) # Column BL
+      inspect_categorical(CNMA_Data, BX_TX) # Column BM   
+      
+      inspect_categorical(CNMA_Data, BR_COMP) # Column DH
+      inspect_categorical(CNMA_Data, MR_COMP) # Column DI  
+      inspect_categorical(CNMA_Data, PREXTRA_COMP) # Column DJ
+      inspect_categorical(CNMA_Data, BX_COMP) # Column DK 
+      
+      CNMA_Data %>% count(BR_TX, MR_TX, PREXTRA_TX, BX_TX, BR_COMP, MR_COMP, PREXTRA_COMP, BX_COMP) %>% print(n = Inf)
+      
+      #### Worked Examples
+      inspect_categorical(CNMA_Data, WXA_TX) # Column BO
+      inspect_categorical(CNMA_Data, WXP_TX) # Column BP   
+      
+      inspect_categorical(CNMA_Data, WXA_COMP) # Column DM
+      inspect_categorical(CNMA_Data, WXP_COMP) # Column DN  
+      
+      CNMA_Data %>% count(WXA_TX, WXP_TX, WXA_COMP, WXP_COMP) %>% print(n = Inf)      
+      
+      #### Strategy Instruction-  multi step strategy or basic fact strategy taught
+      CNMA_Data <- CNMA_Data %>% rename(WP2_TX = `2_WPS_word problem specific [strategy]`)
+      
+      inspect_categorical(CNMA_Data, MS2_TX) # Column BR
+      inspect_categorical(CNMA_Data, WPS_TX) # Column BS   
+      inspect_categorical(CNMA_Data, WP2_TX) # Column BT
+      inspect_categorical(CNMA_Data, MS_TX) # Column BU
+      inspect_categorical(CNMA_Data, BFS_TX) # Column BV   
+      
+      inspect_categorical(CNMA_Data, MS2_COMP) # Column DP
+      inspect_categorical(CNMA_Data, WPS_COMP) # Column DQ  
+      inspect_categorical(CNMA_Data, WP2_COMP) # Column DR
+      inspect_categorical(CNMA_Data, MS_COMP) # Column DS
+      inspect_categorical(CNMA_Data, BFS_COMP) # Column DT 
+      
+      CNMA_Data %>% count(MS2_TX, WPS_TX, WP2_TX, MS_TX, BFS_TX, MS2_COMP, WPS_COMP, WP2_COMP, MS_COMP, BFS_COMP) %>% print(n = Inf) 
+      
+      #### Other- for mirrored contrasts
+      inspect_categorical(CNMA_Data, O_TX) # Column BW  
+      
+      CNMA_Data %>% count(O_TX) %>% print(n = Inf) 
+      
+# Additional modifications CNMA analysis dataset
+  
+  ## Replace n/A with zeros in components   
+  
+  replace_na_specific <- function(df, cols) {
+    df %>%
+      mutate(across(
+        all_of(cols),
+        ~ replace(.x, is.na(.x), 0)
+      ))
+  } 
+  
+  CNMA_Data %>% count(NL_TX, N_TX, NL_COMP, N_COMP) %>% print(n = Inf)
+  CNMA_Data <- replace_na_specific(CNMA_Data, c("NL_TX", "N_TX", "NL_COMP", "N_COMP"))  
+  CNMA_Data %>% count(NL_TX, N_TX, NL_COMP, N_COMP) %>% print(n = Inf)
+  
+  CNMA_Data %>% count(R_TX, RV_TX, R_COMP, RV_COMP) %>% print(n = Inf)  
+  CNMA_Data <- replace_na_specific(CNMA_Data, c("R_TX", "RV_TX", "R_COMP", "RV_COMP"))  
+  CNMA_Data %>% count(R_TX, RV_TX, R_COMP, RV_COMP) %>% print(n = Inf) 
+  
+  CNMA_Data %>% count(ME_TX, VT_TX, ME_COMP, VT_COMP) %>% print(n = Inf) 
+  CNMA_Data <- replace_na_specific(CNMA_Data, c("ME_TX", "VT_TX", "ME_COMP", "VT_COMP"))
+  CNMA_Data %>% count(ME_TX, VT_TX, ME_COMP, VT_COMP) %>% print(n = Inf)   
+  
+  CNMA_Data %>% count(WTS_TX, SV_TX, WTS_COMP, SV_COMP) %>% print(n = Inf)
+  CNMA_Data <- replace_na_specific(CNMA_Data, c("WTS_TX", "SV_TX", "WTS_COMP", "SV_COMP"))  
+  CNMA_Data %>% count(WTS_TX, SV_TX, WTS_COMP, SV_COMP) %>% print(n = Inf)
+  
+  CNMA_Data %>% count(FF_TX, FO_TX, FF_COMP, FO_COMP) %>% print(n = Inf)
+  CNMA_Data <- replace_na_specific(CNMA_Data, c("FF_TX", "FO_TX", "FF_COMP", "FO_COMP"))  
+  CNMA_Data %>% count(FF_TX, FO_TX, FF_COMP, FO_COMP) %>% print(n = Inf)  
+  
+  CNMA_Data %>% count(BR_TX, MR_TX, PREXTRA_TX, BX_TX, BR_COMP, MR_COMP, PREXTRA_COMP, BX_COMP) %>% print(n = Inf)
+  CNMA_Data <- replace_na_specific(CNMA_Data, c("BR_TX", "MR_TX", "PREXTRA_TX", "BX_TX", "BR_COMP", "MR_COMP", "PREXTRA_COMP", "BX_COMP"))  
+  CNMA_Data %>% count(BR_TX, MR_TX, PREXTRA_TX, BX_TX, BR_COMP, MR_COMP, PREXTRA_COMP, BX_COMP) %>% print(n = Inf)  
+  
+  CNMA_Data %>% count(WXA_TX, WXP_TX, WXA_COMP, WXP_COMP) %>% print(n = Inf)   
+  CNMA_Data <- replace_na_specific(CNMA_Data, c("WXA_TX", "WXP_TX", "WXA_COMP", "WXP_COMP"))  
+  CNMA_Data %>% count(WXA_TX, WXP_TX, WXA_COMP, WXP_COMP) %>% print(n = Inf)  
+  
+  CNMA_Data %>% count(MS2_TX, WPS_TX, WP2_TX, MS_TX, BFS_TX, MS2_COMP, WPS_COMP, WP2_COMP, MS_COMP, BFS_COMP) %>% print(n = Inf) 
+  CNMA_Data <- replace_na_specific(CNMA_Data, c("MS2_TX", "WPS_TX", "WP2_TX", "MS_TX", "BFS_TX", "MS2_COMP", "WPS_COMP", "WP2_COMP", "MS_COMP", "BFS_COMP"))
+  CNMA_Data %>% count(MS2_TX, WPS_TX, WP2_TX, MS_TX, BFS_TX, MS2_COMP, WPS_COMP, WP2_COMP, MS_COMP, BFS_COMP) %>% print(n = Inf) 
+  
+  CNMA_Data %>% count(O_TX) %>% print(n = Inf) 
+  CNMA_Data <- replace_na_specific(CNMA_Data, c("O_TX"))
+  CNMA_Data %>% count(O_TX) %>% print(n = Inf)   
+      
+  ## Create intervention and comparison bundles  
+
+    ### intervention_component_bundle
+    make_indicator_labels_plus <- function(df, cols, new_col = "intervention_component_bundle") {
+      df %>%
+        rowwise() %>%
+        mutate(
+          {{ new_col }} := cols %>%
+            keep(~ get(.x) == 1) %>%     # keep only column names where value == 1
+            str_c(collapse = " + ")      # join with "+"
+        ) %>%
+        ungroup()
+    }
+    
+    #CNMA_Data <- make_indicator_labels_plus(CNMA_Data, c("NL_TX", "N_TX", "R_TX", "RV_TX", "ME_TX", "VT_TX", "WTS_TX", "SV_TX", "FF_TX", "FO_TX", "BR_TX", "MR_TX", "PREXTRA_TX", "BX_TX", "WXA_TX", "WXP_TX", "MS2_TX", "WPS_TX", "WP2_TX", "BFS_TX")) #Per team guidance, exclude MS_TX in favor of MS2_TX.
+    #CNMA_Data <- make_indicator_labels_plus(CNMA_Data, c("NL_TX", "R_TX", "ME_TX", "VT_TX", "WTS_TX", "FF_TX", "BR_TX", "MR_TX", "WXA_TX", "MS2_TX", "BFS_TX")) #This version only includes the componets we are entering as modertors in the CNMA fitted with the rma.mv() function below: NL + R + ME + VT + WTS + FF + BR + MR + WXA + MS2 + BFS 
+    CNMA_Data <- make_indicator_labels_plus(CNMA_Data, c("NL_TX", "R_TX", "ME_TX", "VT_TX", "WTS_TX", "FF_TX", "WXA_TX", "MS2_TX", "BFS_TX")) #This version only includes the componets we are entering as modertors in the CNMA fitted with the rma.mv() function below: NL + R + ME + VT + WTS + FF + WXA + MS2 + BFS
+    tabyl(CNMA_Data$intervention_component_bundle)
+    class(CNMA_Data$intervention_component_bundle)
+    #CNMA_Data %>% count(intervention_component_bundle, NL_TX, N_TX, R_TX, RV_TX, ME_TX, VT_TX, WTS_TX, SV_TX, FF_TX, FO_TX, BR_TX, MR_TX, PREXTRA_TX, BX_TX, WXA_TX, WXP_TX, MS2_TX, WPS_TX, WP2_TX, BFS_TX) %>% print(n = Inf)
+    #CNMA_Data %>% count(intervention_component_bundle, NL_TX, R_TX, ME_TX, VT_TX, WTS_TX, FF_TX, BR_TX, MR_TX, WXA_TX, MS2_TX, BFS_TX) %>% print(n = Inf)
+    CNMA_Data %>% count(intervention_component_bundle, NL_TX, R_TX, ME_TX, VT_TX, WTS_TX, FF_TX, WXA_TX, MS2_TX, BFS_TX) %>% print(n = Inf)
+    
+    ### comparison_component_bundle
+    make_indicator_labels_plus <- function(df, cols, new_col = "comparison_component_bundle") {
+      df %>%
+        rowwise() %>%
+        mutate(
+          {{ new_col }} := cols %>%
+            keep(~ get(.x) == 1) %>%     # keep only column names where value == 1
+            str_c(collapse = " + ")      # join with "+"
+        ) %>%
+        ungroup()
+    }
+    
+    #CNMA_Data <- make_indicator_labels_plus(CNMA_Data, c("NL_COMP", "N_COMP", "R_COMP", "RV_COMP", "ME_COMP", "VT_COMP", "WTS_COMP", "SV_COMP", "FF_COMP", "FO_COMP", "BR_COMP", "MR_COMP", "PREXTRA_COMP", "BX_COMP", "WXA_COMP", "WXP_COMP", "MS2_COMP", "WPS_COMP", "WP2_COMP", "BFS_COMP")) #Per team guidance, exclude MS_COMP in favor of MS2_COMP.
+    #CNMA_Data <- make_indicator_labels_plus(CNMA_Data, c("NL_COMP", "R_COMP", "ME_COMP", "VT_COMP", "WTS_COMP", "FF_COMP", "BR_COMP", "MR_COMP", "WXA_COMP", "MS2_COMP", "BFS_COMP")) #This version only includes the componets we are entering as modertors in the CNMA fitted with the rma.mv() function below: NL + R + ME + VT + WTS + FF + BR + MR + WXA + MS2 + BFS
+    CNMA_Data <- make_indicator_labels_plus(CNMA_Data, c("NL_COMP", "R_COMP", "ME_COMP", "VT_COMP", "WTS_COMP", "FF_COMP", "WXA_COMP", "MS2_COMP", "BFS_COMP")) #This version only includes the componets we are entering as modertors in the CNMA fitted with the rma.mv() function below: NL + R + ME + VT + WTS + FF + WXA + MS2 + BFS
+    CNMA_Data <- CNMA_Data %>% mutate(comparison_component_bundle = if_else(comparison_component_bundle == "", "BAU", comparison_component_bundle))
+    tabyl(CNMA_Data$comparison_component_bundle)
+    class(CNMA_Data$comparison_component_bundle)
+    #CNMA_Data %>% count(comparison_component_bundle, NL_COMP, N_COMP, R_COMP, RV_COMP, ME_COMP, VT_COMP, WTS_COMP, SV_COMP, FF_COMP, FO_COMP, BR_COMP, MR_COMP, PREXTRA_COMP, BX_COMP, WXA_COMP, WXP_COMP, MS2_COMP, WPS_COMP, WP2_COMP, BFS_COMP) %>% print(n = Inf)
+    CNMA_Data %>% count(comparison_component_bundle, NL_COMP, R_COMP, ME_COMP, VT_COMP, WTS_COMP, FF_COMP, BR_COMP, MR_COMP, WXA_COMP, MS2_COMP, BFS_COMP) %>% print(n = Inf)
+    CNMA_Data %>% count(comparison_component_bundle, NL_COMP, R_COMP, ME_COMP, VT_COMP, WTS_COMP, FF_COMP, WXA_COMP, MS2_COMP, BFS_COMP) %>% print(n = Inf)
+    
+  ## Create contrast codes   
+  make_contrast_column <- function(df, col1, col2, new_col) {
+    df %>%
+      mutate(
+        {{ new_col }} := case_when(
+          .data[[col1]] == 1 & .data[[col2]] == 0 ~ 1,
+          .data[[col1]] == 0 & .data[[col2]] == 1 ~ -1,
+          .data[[col1]] == 1 & .data[[col2]] == 1 ~ 0,
+          .data[[col1]] == 0 & .data[[col2]] == 0 ~ 0,
+          TRUE ~ NA_real_
+        )
+      )
+  }  
+  
+  CNMA_Data <- make_contrast_column(CNMA_Data, "NL_TX", "NL_COMP", NL)
+  CNMA_Data %>% count(NL_TX, NL_COMP, NL) %>% print(n = Inf)
+  
+  CNMA_Data <- make_contrast_column(CNMA_Data, "N_TX", "N_COMP", N)
+  CNMA_Data %>% count(N_TX, N_COMP, N) %>% print(n = Inf)
+  
+  CNMA_Data <- make_contrast_column(CNMA_Data, "R_TX", "R_COMP", R)
+  CNMA_Data %>% count(R_TX, R_COMP, R) %>% print(n = Inf)
+  
+  CNMA_Data <- make_contrast_column(CNMA_Data, "RV_TX", "RV_COMP", RV)
+  CNMA_Data %>% count(RV_TX, RV_COMP, RV) %>% print(n = Inf)
+  
+  CNMA_Data <- make_contrast_column(CNMA_Data, "ME_TX", "ME_COMP", ME)
+  CNMA_Data %>% count(ME_TX, ME_COMP, ME) %>% print(n = Inf)
+  
+  CNMA_Data <- make_contrast_column(CNMA_Data, "VT_TX", "VT_COMP", VT)
+  CNMA_Data %>% count(VT_TX, VT_COMP, VT) %>% print(n = Inf)
+  
+  CNMA_Data <- make_contrast_column(CNMA_Data, "WTS_TX", "WTS_COMP", WTS)
+  CNMA_Data %>% count(WTS_TX, WTS_COMP, WTS) %>% print(n = Inf)
+  
+  CNMA_Data <- make_contrast_column(CNMA_Data, "SV_TX", "SV_COMP", SV)
+  CNMA_Data %>% count(SV_TX, SV_COMP, SV) %>% print(n = Inf)
+  
+  CNMA_Data <- make_contrast_column(CNMA_Data, "FF_TX", "FF_COMP", FF)
+  CNMA_Data %>% count(FF_TX, FF_COMP, FF) %>% print(n = Inf)
+  
+  CNMA_Data <- make_contrast_column(CNMA_Data, "FO_TX", "FO_COMP", FO)
+  CNMA_Data %>% count(FO_TX, FO_COMP, FO) %>% print(n = Inf)  
+  
+  CNMA_Data <- make_contrast_column(CNMA_Data, "BR_TX", "BR_COMP", BR)
+  CNMA_Data %>% count(BR_TX, BR_COMP, BR) %>% print(n = Inf)
+  
+  CNMA_Data <- make_contrast_column(CNMA_Data, "MR_TX", "MR_COMP", MR)
+  CNMA_Data %>% count(MR_TX, MR_COMP, MR) %>% print(n = Inf)
+  
+  CNMA_Data <- make_contrast_column(CNMA_Data, "PREXTRA_TX", "PREXTRA_COMP", PREXTRA)
+  CNMA_Data %>% count(PREXTRA_TX, PREXTRA_COMP, PREXTRA) %>% print(n = Inf)
+  
+  CNMA_Data <- make_contrast_column(CNMA_Data, "BX_TX", "BX_COMP", BX)
+  CNMA_Data %>% count(BX_TX, BX_COMP, BX) %>% print(n = Inf)  
+  
+  CNMA_Data <- make_contrast_column(CNMA_Data, "WXA_TX", "WXA_COMP", WXA)
+  CNMA_Data %>% count(WXA_TX, WXA_COMP, WXA) %>% print(n = Inf)
+  
+  CNMA_Data <- make_contrast_column(CNMA_Data, "WXP_TX", "WXP_COMP", WXP)
+  CNMA_Data %>% count(WXP_TX, WXP_COMP, WXP) %>% print(n = Inf)  
+
+  CNMA_Data <- make_contrast_column(CNMA_Data, "MS2_TX", "MS2_COMP", MS2)
+  CNMA_Data %>% count(MS2_TX, MS2_COMP, MS2) %>% print(n = Inf)
+  
+  CNMA_Data <- make_contrast_column(CNMA_Data, "WPS_TX", "WPS_COMP", WPS)
+  CNMA_Data %>% count(WPS_TX, WPS_COMP, WPS) %>% print(n = Inf)
+  
+  CNMA_Data <- make_contrast_column(CNMA_Data, "WP2_TX", "WP2_COMP", WP2)
+  CNMA_Data %>% count(WP2_TX, WP2_COMP, WP2) %>% print(n = Inf)  
+  
+  CNMA_Data <- make_contrast_column(CNMA_Data, "MS_TX", "MS_COMP", MS)
+  CNMA_Data %>% count(MS_TX, MS_COMP, MS) %>% print(n = Inf)
+  
+  CNMA_Data <- make_contrast_column(CNMA_Data, "BFS_TX", "BFS_COMP", BFS)
+  CNMA_Data %>% count(BFS_TX, BFS_COMP, BFS) %>% print(n = Inf)  
+  
+  CNMA_Data <- CNMA_Data %>% mutate(O_COMP=0) #Note: Create dummy "Other" component for comparison so that the contrast code functions for creating the O contrast code from O_TX, which is used for the mirrored contrasts.
+  tabyl(CNMA_Data$O_COMP)
+  CNMA_Data <- make_contrast_column(CNMA_Data, "O_TX", "O_COMP", O)
+  CNMA_Data %>% count(O_TX, O_COMP, O) %>% print(n = Inf)  
+  
+  ## Check for mirrored contrasts and lone components
+  
+  # Note: Mirrored contrasts are those that have the exact same (bundle of) components on both sides of the contrast.
+  #       Lone components are those that appear in a mirrored contrast and do not appear in any other T v BAU contrast.
+  
+  tabyl(CNMA_Data$intervention_component_bundle)
+  tabyl(CNMA_Data$comparison_component_bundle)
+  CNMA_Data %>% count(intervention_component_bundle, comparison_component_bundle) %>% print(n = Inf) 
+  CNMA_Data %>% count(O_TX, O, intervention_component_bundle, comparison_component_bundle) %>% print(n = Inf) 
+  
+  CNMA_Data <- CNMA_Data %>% mutate(intervention_component_bundle_clean = str_replace_all(intervention_component_bundle, "_TX", ""))
+  CNMA_Data <- CNMA_Data %>% mutate(comparison_component_bundle_clean = str_replace_all(comparison_component_bundle, "_COMP", ""))
+  tabyl(CNMA_Data$intervention_component_bundle_clean)
+  tabyl(CNMA_Data$comparison_component_bundle_clean)
+  CNMA_Data %>% count(intervention_component_bundle_clean, comparison_component_bundle_clean) %>% print(n = Inf)
+  CNMA_Data %>% count(O_TX, O, intervention_component_bundle_clean, comparison_component_bundle_clean) %>% print(n = Inf)
+  
+  CNMA_Data <- CNMA_Data %>% mutate(intervention_component_bundle_clean = str_replace_all(intervention_component_bundle_clean, " \\+ ", "."))
+  CNMA_Data <- CNMA_Data %>% mutate(comparison_component_bundle_clean = str_replace_all(comparison_component_bundle_clean, " \\+ ", "."))
+  tabyl(CNMA_Data$intervention_component_bundle_clean)
+  tabyl(CNMA_Data$comparison_component_bundle_clean)
+  CNMA_Data %>% count(intervention_component_bundle_clean, comparison_component_bundle_clean) %>% print(n = Inf)
+  CNMA_Data %>% count(O_TX, O, intervention_component_bundle_clean, comparison_component_bundle_clean) %>% print(n = Inf)  
+  
+  CNMA_Data <- CNMA_Data %>% mutate(mirrored_contrast = if_else(intervention_component_bundle_clean == comparison_component_bundle_clean, "YES", "NO"))
+  tabyl(CNMA_Data$mirrored_contrast)
+  CNMA_Data %>% count(mirrored_contrast, intervention_component_bundle_clean, comparison_component_bundle_clean) %>% print(n = Inf)
+  CNMA_Data %>% count(mirrored_contrast, intervention_component_bundle_clean, comparison_component_bundle_clean, O_TX, O) %>% print(n = Inf)
+  CNMA_Data %>% count(mirrored_contrast, O_TX, O) %>% print(n = Inf)
+  
+    ### Create dataset without mirrored contrasts
+    CNMA_Data_nomirrors <- CNMA_Data %>% filter(mirrored_contrast == "NO")
+    tabyl(CNMA_Data_nomirrors$mirrored_contrast)
+    CNMA_Data_nomirrors %>% count(mirrored_contrast, intervention_component_bundle_clean, comparison_component_bundle_clean) %>% print(n = Inf)
+    
+    ### Look for lone compnents
+    CNMA_Data_lc <- CNMA_Data %>% dplyr::select(mirrored_contrast, intervention_component_bundle_clean, comparison_component_bundle_clean)
+    CNMA_Data_lc <- CNMA_Data_lc %>% arrange(mirrored_contrast)
+    print(CNMA_Data_lc, n=Inf)
+      
+  
+#================================================================= CNMA =================================================================#
+  
+  
+# Execute additive component network meta-analysis using a contrast-based random-effects model using BAU as the reference condition
+   
+    
+  #################################### MIRRORED CONTRASTS INCLUDED ####################################
+    
+  ## Sample counts
+    CNMA_Data %>% count()
+    CNMA_Data_c <- CNMA_Data %>% distinct(contrast_id, .keep_all = TRUE)
+    CNMA_Data_c %>% count()
+    tabyl(CNMA_Data_c$mirrored_contrast)
+    
+  ## Add contrast matrix to dataset
+    #Note: Contrast-coded columns for each component were created above.
+    
+  ## Calculate the variance-covariance matrix for multi-treatment studies
+    V_list <- vcalc(variance, cluster= study_id, obs= es_id, rho=0.6, grp1=intervention_component_bundle, grp2=comparison_component_bundle, w1=intervention_n, w2=comparison_n, data=CNMA_Data)
+    V_list    
+    V_list <- data.frame(V_list)
+    write_csv(V_list, 'V_list.csv')
+    
+  ## Run additive cNMA with the unique intervention components as moderators  
+    
+    ### Fit additive CNMA model
+    res_mod_cnma <- rma.mv(effect_size, V_list, 
+                               # mods = ~ NL + N + R + RV + ME + VT + WTS + SV + FF + FO + BR + MR + PREXTRA + BX + WXA + WXP + MS2 + WPS + WP2 + BFS - 1, # Full list of available contrast-coded components for reference.
+                               # mods = ~ NL + R + ME + VT + WTS + FF + BR + MR + WXA + MS2 + BFS - 1, # Original shortlist of components for inlcudion in CNMA for reference.
+                               mods = ~ NL + R + ME + VT + WTS + FF + WXA + MS2 + BFS + O - 1, # BAU is excluded to serve as the reference level for the comparisons.
+                               #random = ~ 1 | study_id/es_id,
+                               random = ~ 1 | study_id/contrast_id/es_id,
+                               rho=0.60, 
+                               data=CNMA_Data)
+    summary(res_mod_cnma) 
+    
+    res_mod_cnma_nooth <- rma.mv(effect_size, V_list, 
+                           # mods = ~ NL + N + R + RV + ME + VT + WTS + SV + FF + FO + BR + MR + PREXTRA + BX + WXA + WXP + MS2 + WPS + WP2 + BFS - 1, # Full list of available contrast-coded components for reference.
+                           # mods = ~ NL + R + ME + VT + WTS + FF + BR + MR + WXA + MS2 + BFS - 1, # Original shortlist of components for inlcudion in CNMA for reference.
+                           mods = ~ NL + R + ME + VT + WTS + FF + WXA + MS2 + BFS - 1, # BAU is excluded to serve as the reference level for the comparisons.
+                           #random = ~ 1 | study_id/es_id,
+                           random = ~ 1 | study_id/contrast_id/es_id,
+                           rho=0.60, 
+                           data=CNMA_Data)
+    summary(res_mod_cnma_nooth) 
+    
+    ### Estimate all pairwise differences between treatments
+    contr <- data.frame(t(combn(names(coef(res_mod_cnma)), 2)))
+    contr <- contrmat(contr, "X1", "X2")
+    rownames(contr) <- paste(contr$X1, "-", contr$X2)
+    contr <- as.matrix(contr[-c(1:2)])
+    sav <- predict(res_mod_cnma, newmods=contr)
+    sav[["slab"]] <- rownames(contr)
+    sav
+    
+    ### Create league table (create diagonal matrix from output sav)
+    lt_info_df <- as.data.frame(sav, optional = TRUE)
+    lt_info_df <- cbind(Comparison = rownames(lt_info_df), lt_info_df)
+    lt_info_df2 <- lt_info_df %>% separate_wider_delim(Comparison, delim = ' - ', names = c('comp1', 'comp2'))
+    round_digits <- function(x) {
+      round(x, digits = 2)
+    }
+    convert_to_character <- function(x) {
+      as.character(x)
+    }
+    lt_info_df2[c("pred","ci.lb","ci.ub")] <- lapply(lt_info_df2[c("pred","ci.lb","ci.ub")], round_digits)
+    lt_info_df2[c("pred","ci.lb","ci.ub")] <- lapply(lt_info_df2[c("pred","ci.lb","ci.ub")], as.character)
+    lt_info_df2$ci.lb <- paste("(", lt_info_df2$ci.lb, " ,", sep= "")
+    lt_info_df2$ci.ub <- paste(lt_info_df2$ci.ub, ")", sep= "")
+    lt_info_df2 <- lt_info_df2 %>% unite(pred_cis, pred, ci.lb, ci.ub, sep= " ", remove = FALSE )
+    print(lt_info_df2)
+    lt_info_df3 <- lt_info_df2 %>% pivot_wider(id_cols= "comp1", names_from= "comp2", values_from = "pred_cis") #This creates the league table formatted as "left vs top".
+    lt_info_df3 <- rename(lt_info_df3, Intervention = comp1)
+    print(lt_info_df3)
+    write_csv(lt_info_df3, file = "cnma_league_table.csv")
+    #write_xlsx(lt_info_df3, 'cnma_league_table.xlsx')
+    
+    ### Compute p-values
+    contr <- data.frame(t(combn(c(names(coef(res_mod_cnma)),"BAU"), 2))) # add "BAU" to contrast matrix / Likely to remove this from output/forest plot
+    contr <- contrmat(contr, "X1", "X2", last="BAU", append=FALSE)
+    b <- c(coef(res_mod_cnma),0) # add 0 for 'BAU' (the "reference treatment" excluded from the mods argument of the rma.mv function executing the NMA above)
+    vb <- bldiag(vcov(res_mod_cnma),0) # add 0 row/column for 'BAU' (the "reference treatment" excluded from the mods argument of the rma.mv function executing the NMA above)
+    pvals <- apply(contr, 1, function(x) pnorm((x%*%b) / sqrt(t(x)%*%vb%*%x)))
+    pvals
+    
+    ### Create table of p-values
+    tab <- vec2mat(pvals, corr=FALSE)
+    tab[lower.tri(tab)] <- t((1 - tab)[lower.tri(tab)])
+    rownames(tab) <- colnames(tab) <- colnames(contr)
+    round(tab, 2) # Like Table 2 in the following: https://bmcmedresmethodol.biomedcentral.com/articles/10.1186/s12874-015-0060-8/tables/2
+    
+    ### Compute the P-scores
+    pscores <- cbind(round(sort(apply(tab, 1, mean, na.rm=TRUE), decreasing=TRUE), 3))
+    pscores
+    
+    ### Add P-scores to model output object
+    res_mod_cnma_df <- tidy(res_mod_cnma, conf.int = TRUE)
+    pscores_df <- cbind(term = rownames(pscores), as.data.frame(pscores))
+    res_mod_cnma_pscore <- res_mod_cnma_df %>% left_join(pscores_df, by = c("term"))
+    res_mod_cnma_pscore <- res_mod_cnma_pscore %>% rename(intervention = term, se = std.error, zval = statistic, pval = p.value, ci.lb = conf.low, ci.ub = conf.high,  Pscore = V1)
+    res_mod_cnma_pscore    
+    res_mod_cnma_pscore <- res_mod_cnma_pscore %>% arrange(desc(Pscore))
+    print(res_mod_cnma_pscore, n=Inf)  
+    
+     
+  #################################### NO MIRRORED CONTRASTS ####################################
+  
+  ## Sample counts
+    CNMA_Data_nomirrors %>% count()
+    CNMA_Data_nomirrors_c <- CNMA_Data_nomirrors %>% distinct(contrast_id, .keep_all = TRUE)
+    CNMA_Data_nomirrors_c %>% count()
+    tabyl(CNMA_Data_nomirrors$mirrored_contrast)
+    tabyl(CNMA_Data_nomirrors$O)
+  
+  ## Add contrast matrix to dataset
+    #Note: Contrast-coded columns for each component were created above.
+  
+  ## Calculate the variance-covariance matrix for multi-treatment studies
+    V_list <- vcalc(variance, cluster= study_id, obs= es_id, rho=0.6, grp1=intervention_component_bundle, grp2=comparison_component_bundle, w1=intervention_n, w2=comparison_n, data=CNMA_Data_nomirrors)
+    V_list    
+    V_list_nomirrors <- data.frame(V_list)
+    write_csv(V_list_nomirrors, 'V_list_nomirrors.csv')
+        
+  ## Run additive cNMA with the unique intervention components as moderators  
+
+    ### Fit additive CNMA model
+    res_mod_nomirrors_cnma <- rma.mv(effect_size, V_list, 
+                            # mods = ~ NL + N + R + RV + ME + VT + WTS + SV + FF + FO + BR + MR + PREXTRA + BX + WXA + WXP + MS2 + WPS + WP2 + BFS - 1, # Full list of available contrast-coded components for reference.
+                            mods = ~ NL + R + ME + VT + WTS + FF + BR + MR + WXA + MS2 + BFS - 1, # BAU is excluded to serve as the reference level for the comparisons.
+                            #random = ~ 1 | study_id/es_id,
+                            random = ~ 1 | study_id/contrast_id/es_id,
+                            rho=0.60, 
+                            data=CNMA_Data_nomirrors)
+    summary(res_mod_nomirrors_cnma) 
+    
+    ### Estimate all pairwise differences between treatments
+    contr <- data.frame(t(combn(names(coef(res_mod_nomirrors_cnma)), 2)))
+    contr <- contrmat(contr, "X1", "X2")
+    rownames(contr) <- paste(contr$X1, "-", contr$X2)
+    contr <- as.matrix(contr[-c(1:2)])
+    sav <- predict(res_mod_nomirrors_cnma, newmods=contr)
+    sav[["slab"]] <- rownames(contr)
+    sav
+        
+    ### Create league table (create diagonal matrix from output sav)
+    lt_info_df <- as.data.frame(sav, optional = TRUE)
+    lt_info_df <- cbind(Comparison = rownames(lt_info_df), lt_info_df)
+    lt_info_df2 <- lt_info_df %>% separate_wider_delim(Comparison, delim = ' - ', names = c('comp1', 'comp2'))
+    round_digits <- function(x) {
+      round(x, digits = 2)
+    }
+    convert_to_character <- function(x) {
+      as.character(x)
+    }
+    lt_info_df2[c("pred","ci.lb","ci.ub")] <- lapply(lt_info_df2[c("pred","ci.lb","ci.ub")], round_digits)
+    lt_info_df2[c("pred","ci.lb","ci.ub")] <- lapply(lt_info_df2[c("pred","ci.lb","ci.ub")], as.character)
+    lt_info_df2$ci.lb <- paste("(", lt_info_df2$ci.lb, " ,", sep= "")
+    lt_info_df2$ci.ub <- paste(lt_info_df2$ci.ub, ")", sep= "")
+    lt_info_df2 <- lt_info_df2 %>% unite(pred_cis, pred, ci.lb, ci.ub, sep= " ", remove = FALSE )
+    print(lt_info_df2)
+    lt_info_df3 <- lt_info_df2 %>% pivot_wider(id_cols= "comp1", names_from= "comp2", values_from = "pred_cis") #This creates the league table formatted as "left vs top".
+    lt_info_df3 <- rename(lt_info_df3, Intervention = comp1)
+    print(lt_info_df3)
+    write_csv(lt_info_df3, file = "cnma_league_table_nomirrors.csv")
+    #write_xlsx(lt_info_df3, 'cnma_league_table_nomirrors.xlsx')
+    
+    ### Compute p-values
+    contr <- data.frame(t(combn(c(names(coef(res_mod_nomirrors_cnma)),"BAU"), 2))) # add "BAU" to contrast matrix / Likely to remove this from output/forest plot
+    contr <- contrmat(contr, "X1", "X2", last="BAU", append=FALSE)
+    b <- c(coef(res_mod_nomirrors_cnma),0) # add 0 for 'BAU' (the "reference treatment" excluded from the mods argument of the rma.mv function executing the NMA above)
+    vb <- bldiag(vcov(res_mod_nomirrors_cnma),0) # add 0 row/column for 'BAU' (the "reference treatment" excluded from the mods argument of the rma.mv function executing the NMA above)
+    pvals <- apply(contr, 1, function(x) pnorm((x%*%b) / sqrt(t(x)%*%vb%*%x)))
+    pvals
+        
+    ### Create table of p-values
+    tab <- vec2mat(pvals, corr=FALSE)
+    tab[lower.tri(tab)] <- t((1 - tab)[lower.tri(tab)])
+    rownames(tab) <- colnames(tab) <- colnames(contr)
+    round(tab, 2) # Like Table 2 in the following: https://bmcmedresmethodol.biomedcentral.com/articles/10.1186/s12874-015-0060-8/tables/2
+        
+    ### Compute the P-scores
+    pscores <- cbind(round(sort(apply(tab, 1, mean, na.rm=TRUE), decreasing=TRUE), 3))
+    pscores
+        
+    ### Add P-scores to model output object
+    res_mod_nomirrors_cnma_df <- tidy(res_mod_nomirrors_cnma, conf.int = TRUE)
+    pscores_df <- cbind(term = rownames(pscores), as.data.frame(pscores))
+    res_mod_nomirrors_cnma_pscore <- res_mod_nomirrors_cnma_df %>% left_join(pscores_df, by = c("term"))
+    res_mod_nomirrors_cnma_pscore <- res_mod_nomirrors_cnma_pscore %>% rename(intervention = term, se = std.error, zval = statistic, pval = p.value, ci.lb = conf.low, ci.ub = conf.high,  Pscore = V1)
+    res_mod_nomirrors_cnma_pscore
+    res_mod_nomirrors_cnma_pscore <- res_mod_nomirrors_cnma_pscore %>% arrange(desc(Pscore))
+    print(res_mod_nomirrors_cnma_pscore, n=Inf)  
+    
+    
+#================================================================= NMA =================================================================#    
+    
+    
+# Execute network meta-analysis (NMA) using a contrast-based random-effects model using BAU as the reference condition
+    
+  #################################### MIRRORED CONTRASTS ####################################
+    
+  ## Create NMA analysis dataset
+    NMA_Data <- CNMA_Data    
+    
+  ## Add contrast matrix to dataset
+    NMA_Data <- contrmat(NMA_Data, grp1="intervention_component_bundle_clean", grp2="comparison_component_bundle_clean")
+    #write_csv(NMA_Data, file = "NMA_Data.csv")
+    
+  ## Calculate the variance-covariance matrix for multi-treatment studies
+    V_list <- vcalc(variance, cluster= study_id, obs= es_id, rho=0.6, grp1=intervention_component_bundle, grp2=comparison_component_bundle, w1=intervention_n, w2=comparison_n, data=NMA_Data)
+    V_list    
+    V_list <- data.frame(V_list)
+    #write_csv(V_list_icW, 'V_list_icW.csv')
+    
+  ##Run standard NMA with the unique interventions bundles as moderators
+    
+    ### Fit NMA model assuming consistency (tau^2_omega=0)
+    tabyl(NMA_Data$intervention_component_bundle_clean)
+    tabyl(NMA_Data$comparison_component_bundle_clean)
+    res_mod_nma <- rma.mv(effect_size, V_list, 
+                                    mods = ~ FF + FF.BFS + FF.MS2 + FF.MS2.BFS + ME.FF.MS2.BFS + ME.VT.WXA + MS2 + NL.R + NL.R.FF.BFS + NL.R.ME.VT.WTS.FF.MS2 + NL.R.ME.VT.WTS.MS2 + NL.R.VT + NL.R.VT.FF.WXA.MS2 + NL.R.VT.WTS.FF.MS2 + NL.R.VT.WTS.FF.MS2.BFS +
+                                             NL.R.VT.WTS.MS2 + R + R.BFS + R.FF.BFS + R.FF.MS2 + R.FF.MS2.BFS + R.ME.VT.MS2 + R.MS2 + R.VT + R.VT.BFS + R.VT.FF.BFS + R.VT.FF.MS2.BFS + R.VT.FF.WXA.MS2.BFS + R.VT.MS2 + R.VT.MS2.BFS + R.VT.WTS.FF.MS2 +  
+                                             R.VT.WTS.FF.WXA.MS2.BFS + R.VT.WTS.MS2 + R.VT.WXA.MS2 + R.WTS.FF.BFS + R.WTS.FF.MS2.BFS + VT + VT.MS2 + WTS.FF  
+                                             - 1, # BAU is excluded to serve as the reference level for the comparisons.
+                                    #random = ~ 1 | study_id/es_id,
+                                    random = ~ 1 | study_id/contrast_id/es_id,
+                                    rho=0.60, 
+                                    data=NMA_Data)
+    summary(res_mod_nma) 
+    
+    ### Estimate all pairwise differences between treatments
+    contr <- data.frame(t(combn(names(coef(res_mod_nma)), 2)))
+    contr <- contrmat(contr, "X1", "X2")
+    rownames(contr) <- paste(contr$X1, "-", contr$X2)
+    contr <- as.matrix(contr[-c(1:2)])
+    sav <- predict(res_mod_nma, newmods=contr)
+    sav[["slab"]] <- rownames(contr)
+    sav
+    
+    ### Create league table (create diagonal matrix from output sav)
+    lt_info_df <- as.data.frame(sav, optional = TRUE)
+    lt_info_df <- cbind(Comparison = rownames(lt_info_df), lt_info_df)
+    lt_info_df2 <- lt_info_df %>% separate_wider_delim(Comparison, delim = ' - ', names = c('comp1', 'comp2'))
+    round_digits <- function(x) {
+      round(x, digits = 2)
+    }
+    convert_to_character <- function(x) {
+      as.character(x)
+    }
+    lt_info_df2[c("pred","ci.lb","ci.ub")] <- lapply(lt_info_df2[c("pred","ci.lb","ci.ub")], round_digits)
+    lt_info_df2[c("pred","ci.lb","ci.ub")] <- lapply(lt_info_df2[c("pred","ci.lb","ci.ub")], as.character)
+    lt_info_df2$ci.lb <- paste("(", lt_info_df2$ci.lb, " ,", sep= "")
+    lt_info_df2$ci.ub <- paste(lt_info_df2$ci.ub, ")", sep= "")
+    lt_info_df2 <- lt_info_df2 %>% unite(pred_cis, pred, ci.lb, ci.ub, sep= " ", remove = FALSE )
+    print(lt_info_df2)
+    lt_info_df3 <- lt_info_df2 %>% pivot_wider(id_cols= "comp1", names_from= "comp2", values_from = "pred_cis") #This creates the league table formatted as "left vs top".
+    lt_info_df3 <- rename(lt_info_df3, Intervention = comp1)
+    print(lt_info_df3)
+    write_csv(lt_info_df3, file = "nma_league_table.csv")
+    #write_xlsx(lt_info_df3, 'nma_league_table.xlsx')
+    
+    ### Compute p-values
+    contr <- data.frame(t(combn(c(names(coef(res_mod_nma)),"BAU"), 2))) # add "BAU" to contrast matrix / Likely to remove this from output/forest plot
+    contr <- contrmat(contr, "X1", "X2", last="BAU", append=FALSE)
+    b <- c(coef(res_mod_nma),0) # add 0 for 'BAU' (the "reference treatment" excluded from the mods argument of the rma.mv function executing the NMA above)
+    vb <- bldiag(vcov(res_mod_nma),0) # add 0 row/column for 'BAU' (the "reference treatment" excluded from the mods argument of the rma.mv function executing the NMA above)
+    pvals <- apply(contr, 1, function(x) pnorm((x%*%b) / sqrt(t(x)%*%vb%*%x)))
+    pvals
+    
+    ### Create table of p-values
+    tab <- vec2mat(pvals, corr=FALSE)
+    tab[lower.tri(tab)] <- t((1 - tab)[lower.tri(tab)])
+    rownames(tab) <- colnames(tab) <- colnames(contr)
+    round(tab, 2) # Like Table 2 in the following: https://bmcmedresmethodol.biomedcentral.com/articles/10.1186/s12874-015-0060-8/tables/2
+    
+    ### Compute the P-scores
+    pscores <- cbind(round(sort(apply(tab, 1, mean, na.rm=TRUE), decreasing=TRUE), 3))
+    pscores
+    
+    ### Add P-scores to model output object
+    res_mod_nma_df <- tidy(res_mod_nma, conf.int = TRUE)
+    pscores_df <- cbind(term = rownames(pscores), as.data.frame(pscores))
+    res_mod_nma_pscore <- res_mod_nma_df %>% left_join(pscores_df, by = c("term"))
+    res_mod_nma_pscore <- res_mod_nma_pscore %>% rename(intervention = term, se = std.error, zval = statistic, pval = p.value, ci.lb = conf.low, ci.ub = conf.high,  Pscore = V1)
+    print(res_mod_nma_pscore, n=Inf)
+    res_mod_nma_pscore <- res_mod_nma_pscore %>% arrange(desc(Pscore))
+    print(res_mod_nma_pscore, n=Inf)        
+    
+    
+  #################################### NO MIRRORED CONTRASTS ####################################
+    
+    
+  ## Create NMA analysis dataset- no mirrors
+    NMA_Data_nomirrors <- CNMA_Data_nomirrors
+    
+  ## Add contrast matrix to dataset
+    NMA_Data_nomirrors <- contrmat(NMA_Data_nomirrors, grp1="intervention_component_bundle_clean", grp2="comparison_component_bundle_clean")
+    #write_csv(NMA_Data_nomirrors, file = "NMA_Data_nomirrors.csv")
+    
+  ## Calculate the variance-covariance matrix for multi-treatment studies
+    V_list <- vcalc(variance, cluster= study_id, obs= es_id, rho=0.6, grp1=intervention_component_bundle, grp2=comparison_component_bundle, w1=intervention_n, w2=comparison_n, data=NMA_Data_nomirrors)
+    V_list    
+    V_list_nomirrors <- data.frame(V_list)
+    #write_csv(V_list_icW_nomirrors, 'V_list_icW_nomirrors.csv')
+    
+  ##Run standard NMA with the unique interventions bundles as moderators
+    
+    ### Fit NMA model assuming consistency (tau^2_omega=0)
+    tabyl(NMA_Data_nomirrors$intervention_component_bundle_clean)
+    tabyl(NMA_Data_nomirrors$comparison_component_bundle_clean)
+    res_mod_nomirrors_nma <- rma.mv(effect_size, V_list, 
+                               mods = ~ FF + FF.BFS + FF.MS2 + FF.MS2.BFS + ME.FF.MS2.BFS + ME.VT.WXA + MS2 + NL.R + NL.R.FF.BFS + NL.R.ME.VT.WTS.FF.MS2 + NL.R.ME.VT.WTS.MS2 + NL.R.VT.FF.WXA.MS2 + NL.R.VT.WTS.FF.MS2 + NL.R.VT.WTS.FF.MS2.BFS +
+                               NL.R.VT.WTS.MS2 + R + R.BFS + R.FF.BFS + R.FF.MS2 + R.FF.MS2.BFS + R.ME.VT.MS2 + R.MS2 + R.VT + R.VT.BFS + R.VT.FF.BFS + R.VT.FF.MS2.BFS + R.VT.FF.WXA.MS2.BFS + R.VT.MS2 + R.VT.MS2.BFS + R.VT.WTS.FF.MS2 +
+                               R.VT.WTS.FF.WXA.MS2.BFS + R.VT.WTS.MS2 + R.VT.WXA.MS2 + R.WTS.FF.BFS + R.WTS.FF.MS2.BFS + VT + VT.MS2 + WTS.FF 
+                               - 1, # BAU is excluded to serve as the reference level for the comparisons.
+                               #random = ~ 1 | study_id/es_id,
+                               random = ~ 1 | study_id/contrast_id/es_id,
+                               rho=0.60, 
+                               data=NMA_Data_nomirrors)
+    summary(res_mod_nomirrors_nma) 
+    
+    ### Estimate all pairwise differences between treatments
+    contr <- data.frame(t(combn(names(coef(res_mod_nomirrors_nma)), 2)))
+    contr <- contrmat(contr, "X1", "X2")
+    rownames(contr) <- paste(contr$X1, "-", contr$X2)
+    contr <- as.matrix(contr[-c(1:2)])
+    sav <- predict(res_mod_nomirrors_nma, newmods=contr)
+    sav[["slab"]] <- rownames(contr)
+    sav
+    
+    ### Create league table (create diagonal matrix from output sav)
+    lt_info_df <- as.data.frame(sav, optional = TRUE)
+    lt_info_df <- cbind(Comparison = rownames(lt_info_df), lt_info_df)
+    lt_info_df2 <- lt_info_df %>% separate_wider_delim(Comparison, delim = ' - ', names = c('comp1', 'comp2'))
+    round_digits <- function(x) {
+      round(x, digits = 2)
+    }
+    convert_to_character <- function(x) {
+      as.character(x)
+    }
+    lt_info_df2[c("pred","ci.lb","ci.ub")] <- lapply(lt_info_df2[c("pred","ci.lb","ci.ub")], round_digits)
+    lt_info_df2[c("pred","ci.lb","ci.ub")] <- lapply(lt_info_df2[c("pred","ci.lb","ci.ub")], as.character)
+    lt_info_df2$ci.lb <- paste("(", lt_info_df2$ci.lb, " ,", sep= "")
+    lt_info_df2$ci.ub <- paste(lt_info_df2$ci.ub, ")", sep= "")
+    lt_info_df2 <- lt_info_df2 %>% unite(pred_cis, pred, ci.lb, ci.ub, sep= " ", remove = FALSE )
+    print(lt_info_df2)
+    lt_info_df3 <- lt_info_df2 %>% pivot_wider(id_cols= "comp1", names_from= "comp2", values_from = "pred_cis") #This creates the league table formatted as "left vs top".
+    lt_info_df3 <- rename(lt_info_df3, Intervention = comp1)
+    print(lt_info_df3)
+    write_csv(lt_info_df3, file = "nma_league_table_nomirrors.csv")
+    #write_xlsx(lt_info_df3, 'nma_league_table_nomirrors.xlsx')
+    
+    ### Compute p-values
+    contr <- data.frame(t(combn(c(names(coef(res_mod_nomirrors_nma)),"BAU"), 2))) # add "BAU" to contrast matrix / Likely to remove this from output/forest plot
+    contr <- contrmat(contr, "X1", "X2", last="BAU", append=FALSE)
+    b <- c(coef(res_mod_nomirrors_nma),0) # add 0 for 'BAU' (the "reference treatment" excluded from the mods argument of the rma.mv function executing the NMA above)
+    vb <- bldiag(vcov(res_mod_nomirrors_nma),0) # add 0 row/column for 'BAU' (the "reference treatment" excluded from the mods argument of the rma.mv function executing the NMA above)
+    pvals <- apply(contr, 1, function(x) pnorm((x%*%b) / sqrt(t(x)%*%vb%*%x)))
+    pvals
+    
+    ### Create table of p-values
+    tab <- vec2mat(pvals, corr=FALSE)
+    tab[lower.tri(tab)] <- t((1 - tab)[lower.tri(tab)])
+    rownames(tab) <- colnames(tab) <- colnames(contr)
+    round(tab, 2) # Like Table 2 in the following: https://bmcmedresmethodol.biomedcentral.com/articles/10.1186/s12874-015-0060-8/tables/2
+    
+    ### Compute the P-scores
+    pscores <- cbind(round(sort(apply(tab, 1, mean, na.rm=TRUE), decreasing=TRUE), 3))
+    pscores
+    
+    ### Add P-scores to model output object
+    res_mod_nomirrors_nma_df <- tidy(res_mod_nomirrors_nma, conf.int = TRUE)
+    pscores_df <- cbind(term = rownames(pscores), as.data.frame(pscores))
+    res_mod_nomirrors_nma_pscore <- res_mod_nomirrors_nma_df %>% left_join(pscores_df, by = c("term"))
+    res_mod_nomirrors_nma_pscore <- res_mod_nomirrors_nma_pscore %>% rename(intervention = term, se = std.error, zval = statistic, pval = p.value, ci.lb = conf.low, ci.ub = conf.high,  Pscore = V1)
+    print(res_mod_nomirrors_nma_pscore, n=Inf)
+    res_mod_nomirrors_nma_pscore <- res_mod_nomirrors_nma_pscore %>% arrange(desc(Pscore))
+    print(res_mod_nomirrors_nma_pscore, n=Inf)    
