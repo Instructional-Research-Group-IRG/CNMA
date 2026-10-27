@@ -1,0 +1,133 @@
+********************************** CNMA with i) all domains; ii) mirrored contrasts; & iii) "other" coded **********************************
+
+>       res_mod_cnma <- rma.mv(effect_size, V_list_cnma, 
++                                  mods = ~ NL + R + ME + VT + WTS + FF + WXA + MS2 + BFS + O - 1, # BAU is excluded to serve as the reference level for the comparisons.
++                                  random = ~ 1 | study_id/contrast_id/es_id,
++                                  rho=0.60, 
++                                  data=CNMA_Data)
+>       summary(res_mod_cnma) 
+
+Multivariate Meta-Analysis Model (k = 433; method: REML)
+
+   logLik   Deviance        AIC        BIC       AICc   
+-299.1141   598.2282   624.2282   676.8440   625.1182   
+
+Variance Components:
+
+            estim    sqrt  nlvls  fixed                      factor 
+sigma^2.1  0.0206  0.1437     61     no                    study_id 
+sigma^2.2  0.0285  0.1687    112     no        study_id/contrast_id 
+sigma^2.3  0.1587  0.3983    433     no  study_id/contrast_id/es_id 
+
+Test for Residual Heterogeneity:
+QE(df = 423) = 4709.4219, p-val < .0001
+
+Test of Moderators (coefficients 1:10):
+QM(df = 10) = 214.8268, p-val < .0001
+
+Model Results:
+
+     estimate      se    zval    pval    ci.lb   ci.ub    
+NL     0.2755  0.1304  2.1124  0.0347   0.0199  0.5310  * 
+R      0.1893  0.1052  1.7998  0.0719  -0.0168  0.3954  . 
+ME     0.0727  0.1312  0.5538  0.5797  -0.1845  0.3298    
+VT     0.0978  0.1018  0.9609  0.3366  -0.1017  0.2972    
+WTS    0.0566  0.1229  0.4601  0.6454  -0.1844  0.2975    
+FF     0.1639  0.0821  1.9956  0.0460   0.0029  0.3249  * 
+WXA    0.0306  0.1569  0.1949  0.8455  -0.2770  0.3382    
+MS2    0.1627  0.0891  1.8270  0.0677  -0.0118  0.3373  . 
+BFS    0.0681  0.0969  0.7034  0.4818  -0.1217  0.2580    
+O      0.0822  0.0895  0.9188  0.3582  -0.0931  0.2575    
+
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+
+
+********************************** NMA with i) all domains; ii) mirrored contrasts; & iii) "other" coded **********************************
+
+>       res_mod_nma <- rma.mv(effect_size, V_list_nma, 
++                               mods = ~ FF  + FF.BFS +  FF.MS2 + FF.MS2.BFS +  ME.FF.MS2.BFS + ME.VT.WXA + ME.VT.WXA.O + MS2 + NL.R + NL.R.FF.BFS + NL.R.ME.VT.WTS.FF.MS2 + NL.R.ME.VT.WTS.MS2 +
++                                         NL.R.VT.FF.WXA.MS2 + NL.R.VT + NL.R.VT.O + NL.R.VT.WTS.FF.MS2 + NL.R.VT.WTS.FF.MS2.BFS + NL.R.VT.WTS.FF.MS2.BFS.O + NL.R.VT.WTS.FF.MS2.O + NL.R.VT.WTS.MS2 +
++                                         R + R.BFS + R.BFS.O + R.FF.BFS + R.FF.BFS.O + R.FF.MS2 + R.FF.MS2.BFS + R.ME.VT.MS2 + R.MS2 + R.VT + R.VT.BFS + R.VT.BFS.O + R.VT.FF.BFS +
++                                         R.VT.FF.MS2.BFS + R.VT.FF.MS2.BFS.O + R.VT.FF.WXA.MS2.BFS + R.VT.MS2 + R.VT.MS2.BFS + R.VT.MS2.BFS.O + R.VT.WTS.FF.MS2 + R.VT.WTS.FF.WXA.MS2.BFS +
++                                         R.VT.WTS.MS2 + R.VT.WXA.MS2 + R.WTS.FF.BFS + R.WTS.FF.MS2.BFS + VT + VT.MS2 + WTS.FF
++                                      - 1, # BAU is excluded to serve as the reference level for the comparisons.
++                               #random = ~ 1 | study_id/es_id,
++                               random = ~ 1 | study_id/contrast_id/es_id,
++                               rho=0.60, 
++                               data=NMA_Data)
+Warning message:
+Redundant predictors dropped from the model. >       summary(res_mod_nma)
+
+Multivariate Meta-Analysis Model (k = 433; method: REML)
+
+   logLik   Deviance        AIC        BIC       AICc   
+-249.3606   498.7211   598.7211   796.5130   613.9450   
+
+Variance Components:
+
+            estim    sqrt  nlvls  fixed                      factor 
+sigma^2.1  0.0283  0.1682     61     no                    study_id 
+sigma^2.2  0.0000  0.0000    112     no        study_id/contrast_id 
+sigma^2.3  0.1594  0.3993    433     no  study_id/contrast_id/es_id 
+
+Test for Residual Heterogeneity:
+QE(df = 386) = 4556.9637, p-val < .0001
+
+Test of Moderators (coefficients 1:47):
+QM(df = 47) = 300.1254, p-val < .0001
+
+Model Results:
+
+                          estimate      se     zval    pval    ci.lb   ci.ub      
+FF                          0.3155  0.2001   1.5765  0.1149  -0.0767  0.7077      
+FF.BFS                      0.4537  0.3975   1.1414  0.2537  -0.3254  1.2328      
+FF.MS2                      0.4421  0.3885   1.1378  0.2552  -0.3194  1.2036      
+FF.MS2.BFS                  0.3847  0.1974   1.9494  0.0512  -0.0021  0.7716    . 
+ME.FF.MS2.BFS               0.4308  0.3064   1.4059  0.1598  -0.1698  1.0313      
+ME.VT.WXA                   0.3599  0.3751   0.9594  0.3373  -0.3753  1.0952      
+ME.VT.WXA.O                 0.6559  0.6120   1.0717  0.2839  -0.5436  1.8553      
+MS2                         0.7337  0.2668   2.7499  0.0060   0.2108  1.2566   ** 
+NL.R                        2.3329  0.5937   3.9292  <.0001   1.1692  3.4966  *** 
+NL.R.FF.BFS                 0.3126  0.2504   1.2483  0.2119  -0.1782  0.8033      
+NL.R.ME.VT.WTS.FF.MS2       0.8164  0.1770   4.6136  <.0001   0.4696  1.1632  *** 
+NL.R.ME.VT.WTS.MS2          0.8766  0.2764   3.1716  0.0015   0.3349  1.4184   ** 
+NL.R.VT.FF.WXA.MS2          0.4266  0.2625   1.6251  0.1041  -0.0879  0.9410      
+NL.R.VT                    -0.0580  0.4716  -0.1230  0.9021  -0.9822  0.8663      
+NL.R.VT.WTS.FF.MS2          1.0532  0.1076   9.7913  <.0001   0.8423  1.2640  *** 
+NL.R.VT.WTS.FF.MS2.BFS      0.8141  0.2211   3.6818  0.0002   0.3807  1.2475  *** 
+NL.R.VT.WTS.FF.MS2.BFS.O    0.9242  0.3645   2.5353  0.0112   0.2097  1.6387    * 
+NL.R.VT.WTS.FF.MS2.O        1.0907  0.2129   5.1222  <.0001   0.6733  1.5080  *** 
+NL.R.VT.WTS.MS2             0.9166  0.1426   6.4298  <.0001   0.6372  1.1960  *** 
+R                           0.3302  0.2686   1.2292  0.2190  -0.1963  0.8567      
+R.BFS                       0.3926  0.1205   3.2575  0.0011   0.1564  0.6289   ** 
+R.BFS.O                     0.3391  0.4888   0.6937  0.4879  -0.6189  1.2971      
+R.FF.BFS                    0.5932  0.1573   3.7707  0.0002   0.2849  0.9016  *** 
+R.FF.BFS.O                  1.0460  0.4104   2.5487  0.0108   0.2416  1.8504    * 
+R.FF.MS2                    0.3628  0.2962   1.2247  0.2207  -0.2178  0.9433      
+R.FF.MS2.BFS                0.5871  0.2367   2.4804  0.0131   0.1232  1.0510    * 
+R.ME.VT.MS2                 1.7760  0.3987   4.4544  <.0001   0.9946  2.5575  *** 
+R.MS2                       0.2464  0.2151   1.1455  0.2520  -0.1752  0.6680      
+R.VT                        0.2567  0.4179   0.6143  0.5390  -0.5623  1.0757      
+R.VT.BFS                    0.3763  0.1252   3.0066  0.0026   0.1310  0.6216   ** 
+R.VT.BFS.O                  0.3897  0.2478   1.5726  0.1158  -0.0960  0.8754      
+R.VT.FF.BFS                 0.2196  0.2637   0.8329  0.4049  -0.2972  0.7364      
+R.VT.FF.MS2.BFS             0.8250  0.1471   5.6085  <.0001   0.5367  1.1133  *** 
+R.VT.FF.MS2.BFS.O           1.1808  0.3615   3.2660  0.0011   0.4722  1.8894   ** 
+R.VT.FF.WXA.MS2.BFS         0.6893  0.2879   2.3943  0.0167   0.1250  1.2535    * 
+R.VT.MS2                    0.1210  0.2435   0.4972  0.6191  -0.3561  0.5982      
+R.VT.MS2.BFS                0.3620  0.1580   2.2919  0.0219   0.0524  0.6716    * 
+R.VT.MS2.BFS.O              0.5520  0.2978   1.8539  0.0637  -0.0316  1.1356    . 
+R.VT.WTS.FF.MS2             0.4236  0.2551   1.6603  0.0969  -0.0764  0.9236    . 
+R.VT.WTS.FF.WXA.MS2.BFS     0.9796  0.2984   3.2830  0.0010   0.3948  1.5645   ** 
+R.VT.WTS.MS2                0.1587  0.2165   0.7330  0.4636  -0.2657  0.5831      
+R.VT.WXA.MS2                0.5218  0.2191   2.3809  0.0173   0.0922  0.9513    * 
+R.WTS.FF.BFS                0.2372  0.3896   0.6089  0.5426  -0.5264  1.0009      
+R.WTS.FF.MS2.BFS            0.9604  0.3882   2.4739  0.0134   0.1995  1.7212    * 
+VT                          0.3392  0.2087   1.6256  0.1040  -0.0698  0.7483      
+VT.MS2                      0.2335  0.2875   0.8122  0.4167  -0.3300  0.7971      
+WTS.FF                      0.1170  0.5561   0.2104  0.8334  -0.9730  1.2070      
+
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1

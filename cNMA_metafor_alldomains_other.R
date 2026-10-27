@@ -537,10 +537,9 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
   #################################### MIRRORED CONTRASTS ####################################
     
   ## Create NMA analysis dataset
-    #-> Note: Need to removed the component binaries becasue some of the interventions are comprised of single components. 
-    #         If not removed, the contrmat function below will create an unequal duplicate column 
-    #         (i.e., a column as a binary for the intervention bunlde of the single component which is not the same as the existing binary for if the component exists in any contrast).
-    #         We don't want to mix these columns up in the NMA moderators below.
+    #-> Note: Need to remove the contrast-coded component columns becasue some of the interventions are comprised of single components. 
+    #         If the contrast-coded component columns are not removed, the contrmat function below will create an duplicate column for any component that is itelf its own "component bundle" 
+    #         that will not be equal to the contrast-coded component column of the same name. We don't want to mix these columns up in the NMA moderators below.
     NMA_Data_temp <- CNMA_Data %>% dplyr::select(-(NL:O))   
     
   ## Add contrast matrix to dataset
@@ -650,8 +649,6 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
     res_mod_nma_pscore <- res_mod_nma_pscore %>% arrange(desc(Pscore))
     print(res_mod_nma_pscore, n=Inf)        
     
-    
-    
     ### Create network graph
     
     ### Note: The data are currently in a contrast-based, "wide" format in which each contrast is an observation 
@@ -665,7 +662,7 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
       print(NMA_Data_short) #Example rows of the contrast-based wide format. Compare to the long format printed below.
       
       #### Each unique contrast within each unique study should only be counted once when weighting the network connections between each unique contrast combination of intervention versus comparison in the network graph.
-      #### Because there can be multiple measures within multiple domains within each unique contrast within each unique study, we need reduce the data set to one observation per unique contrast within each unique study 
+      #### Because there can be multiple measures within multiple domains within each unique contrast within each unique study, we need to reduce the data set to one observation per unique contrast within each unique study 
       #### so that a contrast with more domains/measures than another contrast is not overweighted in the visualization of the network connections (re the relative thicknesses of the "edges" between the I/C nodes in the network graph).
       NMA_Data_temp %>% count(study_id, contrast_id)
       NMA_data_analysis_subset3 <- NMA_Data_temp %>% distinct(study_id, contrast_id, .keep_all = TRUE)
@@ -676,7 +673,7 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
       tabyl(NMA_data_analysis_subset4$int_comp) #The relative number of observations (n) for the intervention_BAU contrasts in this table should match the relative thicknesses of the lines (called "edges") in the network graph.
       
       #### Reshape data to arm-based long format
-      NMA_data_analysis_subset_long <- pivot_longer(NMA_data_analysis_subset3, c(intervention_component_bundle_oth, comparison_component_bundle_clean), names_to = "assignment_I_C", values_to = "intervention_comparison")
+      NMA_data_analysis_subset_long <- pivot_longer(NMA_data_analysis_subset3, c(intervention_component_bundle_oth_clean, comparison_component_bundle_clean), names_to = "assignment_I_C", values_to = "intervention_comparison")
       
       #### Review data in arm-based long format after reshape for comparison with data before reshape (as a desk check)
       NMA_data_analysis_subset_long2 <- NMA_data_analysis_subset_long %>% dplyr::select(study_id, contrast_id, assignment_I_C, intervention_comparison, measure_name, es_id, effect_size)
@@ -695,8 +692,8 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
       #### Creating the network graph with igraph
       set.seed(3524)
       g <- graph_from_adjacency_matrix(tab, mode = "plus", weighted=TRUE, diag=FALSE)
-      plot(g, edge.curved=FALSE, edge.width=E(g)$weight,
-           layout=layout_in_circle(g))
+      plot(g, edge.curved=FALSE, 
+           layout=layout_in_circle(g), vertex.size=6, vertex.label.font=1, vertex.label.cex = 0.75, vertex.label.dist=.9)
       
       # num_students_icW_long3
       # num_students_icW_long4 <- num_students_icW_long3 %>% mutate(sum_num_students_bundle2= if_else((intervention_comparison=="NL.FF.RS" | intervention_comparison=="VF.RS"),num_students*2,num_students))
@@ -714,10 +711,13 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
 
     
   #################################### NO MIRRORED CONTRASTS ####################################
-    
-    
+      
   ## Create NMA analysis dataset- no mirrors
-    NMA_Data_nomirrors <- CNMA_Data_nomirrors
+      #-> Note: Need to remove the contrast-coded component columns becasue some of the interventions are comprised of single components. 
+      #         If the contrast-coded component columns are not removed, the contrmat function below will create an duplicate column for any component that is itelf its own "component bundle" 
+      #         that will not be equal to the contrast-coded component column of the same name. We don't want to mix these columns up in the NMA moderators below.
+      
+    NMA_Data_nomirrors <- CNMA_Data_nomirrors %>% dplyr::select(-(NL:O))  
     
   ## Add contrast matrix to dataset
     NMA_Data_nomirrors <- contrmat(NMA_Data_nomirrors, grp1="intervention_component_bundle_clean", grp2="comparison_component_bundle_clean")
