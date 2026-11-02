@@ -11,7 +11,7 @@
   
   ## Install and load other required packages
   #install.packages("pacman") 
-  pacman::p_load(metafor, googlesheets4, dplyr, tidyr, skimr, testit, assertable, meta, netmeta, stringr, janitor, naniar, igraph, multcomp, broom, gridExtra, ggplot2, writexl, readr, grid, gridExtra, cowplot, extrafont, purrr)
+  pacman::p_load(metafor, googlesheets4, dplyr, tidyr, skimr, testit, assertable, meta, netmeta, stringr, janitor, naniar, igraph, multcomp, broom, gridExtra, ggplot2, writexl, readr, grid, gridExtra, cowplot, extrafont, purrr, corrplot)
   
 # Load (read) data (i.e., copy data to 'dat')
 CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWVNLx1uksOu4QQlf2Xo7p4SZahPMio/edit?gid=931222966#gid=931222966&fvid=1356828720", sheet="Master Database") # <<CNMA master database>>
@@ -466,6 +466,67 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
     write_csv(lt_info_df3, file = "cnma_league_table.csv")
     #write_xlsx(lt_info_df3, 'cnma_league_table.xlsx')
     
+    ### Create heat map of correaltions
+    
+    #-> Pivot long so that components given together on the "comparison" side of TvsT also get included in the correlations
+    #-> Note: The data are currently in wide format in which the intervention and comparison bundles are in two different columns.
+    #         As such, at the contrat-level, each row is a contrast. The code below identifies which components are given together
+    #         by using binary (1/0) columns in which each column name is the component label. The CNMA database uses contrast-coded (1/0/-1) 
+    #         columns for each component (in which each column name is also the component label) becasue some contrasts are T vs. T meaning 
+    #         the "comparison" side of these T vs. T contrasts have component bundles as well which should be taken into account
+    #         for the correlations. As such, the contrast-coded columns cannot be used becasue they do not capture the non-BAU
+    #         components on the comparison side of contrasts (they get coded 0 or 1 depending on if it exists on the "treatment" side as well).
+    #         As such, using the contrat-level CNMA data (because we do not want to double count when a contrast has more than one measure), 
+    #         we need to pivot the data long so that each side of a contrast is it's own row and then create the binary compoennt columns 
+    #         from the intervention bundle of each row. 
+    
+    CNMA_Data_c_pivotlong_pre <- CNMA_Data_c %>% dplyr::select(study_id, contrast_id, intervention_component_bundle_oth_clean, comparison_component_bundle_clean)
+    print(CNMA_Data_c_pivotlong_pre)
+    CNMA_Data_c_pivotlong_post <- CNMA_Data_c_pivotlong_pre %>% pivot_longer(CNMA_Data_c, names_to= "component_bundle_clean")
+    
+    #-> Component labels
+    labdat <- data.frame(coding1 = c("NL", "R", "ME", "VT", "WTS", "FF", "WXA", "MS2", "BFS"))
+    labs <- c("NL", "R", "ME", "VT", "WTS", "FF", "WXA", "MS2", "BFS")
+    
+    #-> Generate object with data for plot - Which trial arms feature each component
+    datas <- vector("list",2)
+    for (i in 1:length(labdat$coding1)) {
+      x <- as.character(labdat$coding1[i])
+      lab <- as.character(labdat$coding1[i])
+      datas[[i]] <- rownames(subset(CNMA_Data_c, get(x) == 1))
+      names(datas)[i] <- lab
+      rm(x,lab,i)
+    }
+    
+    datas
+    
+    tabyl(CNMA_Data$NL)
+    tabyl(CNMA_Data$R)
+    tabyl(CNMA_Data$ME)
+    tabyl(CNMA_Data$VT)
+    tabyl(CNMA_Data$WTS)
+    tabyl(CNMA_Data$FF)
+    tabyl(CNMA_Data$WXA)
+    tabyl(CNMA_Data$MS2)
+    tabyl(CNMA_Data$BFS)
+    
+    CNMA_Data %>% count(intervention_component_bundle_oth_clean, comparison_component_bundle_clean) %>% print(n=Inf)
+    
+    
+    #-> Reduce data down to component columns and add component labels
+    comp <- labdat$coding1
+    x <- CNMA_Data_c[,comp]
+    names(x) <- labs
+    
+    #-> compute phi-coefficients:
+    y <- cor(x)
+    
+    #-> create correlation plot:
+    corrplot(y, method = "color", type = "upper", diag = FALSE, 
+             tl.cex = 1, tl.col = "black",
+             number.cex = 1, number.font = 2, number.digits = 2,
+             col=COL2("PRGn"), addCoef.col="black")
+    
      
   #################################### NO MIRRORED CONTRASTS ####################################
   
@@ -566,7 +627,7 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
       tabyl(NMA_Data$comparison_component_bundle_clean)
       res_mod_nma <- rma.mv(effect_size, V_list_nma, 
                               mods = ~ FF  + FF.BFS +  FF.MS2 + FF.MS2.BFS +  ME.FF.MS2.BFS + ME.VT.WXA + ME.VT.WXA.O + MS2 + NL.R + NL.R.FF.BFS + NL.R.ME.VT.WTS.FF.MS2 + NL.R.ME.VT.WTS.MS2 +
-                                        NL.R.VT.FF.WXA.MS2 + NL.R.VT + NL.R.VT.O + NL.R.VT.WTS.FF.MS2 + NL.R.VT.WTS.FF.MS2.BFS + NL.R.VT.WTS.FF.MS2.BFS.O + NL.R.VT.WTS.FF.MS2.O + NL.R.VT.WTS.MS2 +
+                                        NL.R.VT.FF.WXA.MS2 + NL.R.VT.O + NL.R.VT + NL.R.VT.WTS.FF.MS2 + NL.R.VT.WTS.FF.MS2.BFS + NL.R.VT.WTS.FF.MS2.BFS.O + NL.R.VT.WTS.FF.MS2.O + NL.R.VT.WTS.MS2 +
                                         R + R.BFS + R.BFS.O + R.FF.BFS + R.FF.BFS.O + R.FF.MS2 + R.FF.MS2.BFS + R.ME.VT.MS2 + R.MS2 + R.VT + R.VT.BFS + R.VT.BFS.O + R.VT.FF.BFS +
                                         R.VT.FF.MS2.BFS + R.VT.FF.MS2.BFS.O + R.VT.FF.WXA.MS2.BFS + R.VT.MS2 + R.VT.MS2.BFS + R.VT.MS2.BFS.O + R.VT.WTS.FF.MS2 + R.VT.WTS.FF.WXA.MS2.BFS +
                                         R.VT.WTS.MS2 + R.VT.WXA.MS2 + R.WTS.FF.BFS + R.WTS.FF.MS2.BFS + VT + VT.MS2 + WTS.FF
