@@ -481,10 +481,41 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
     #         from the intervention bundle of each row. 
     
     CNMA_Data_c_pivotlong_pre <- CNMA_Data_c %>% dplyr::select(study_id, contrast_id, intervention_component_bundle_oth_clean, comparison_component_bundle_clean)
+    CNMA_Data_c_pivotlong_pre <- CNMA_Data_c_pivotlong_pre %>% rename(intervention= intervention_component_bundle_oth_clean, comparison= comparison_component_bundle_clean)
     print(CNMA_Data_c_pivotlong_pre)
-    CNMA_Data_c_pivotlong_post <- CNMA_Data_c_pivotlong_pre %>% pivot_longer(CNMA_Data_c, names_to= "component_bundle_clean")
+    CNMA_Data_c_pivotlong_post <- CNMA_Data_c_pivotlong_pre %>% pivot_longer(c(intervention, comparison), names_to= "component_bundle_clean", values_to= "component_bundle" )
+    print(CNMA_Data_c_pivotlong_post, n=Inf)
+
     
-    #-> Component labels
+    #-> Create component binaries 
+    create_component_flag <- function(data, component, bundle_col = "component_bundle") {
+      data %>%
+        dplyr::mutate(
+          !!component :=
+            as.integer(
+              stringr::str_detect(
+                .data[[bundle_col]],
+                paste0("(^|\\.)", component, "(\\.|$)")
+              )
+            )
+        )
+    }
+    
+    CNMA_Data_c_pivotlong_post <- create_component_flag (data = CNMA_Data_c_pivotlong_post, component = "NL")
+    CNMA_Data_c_pivotlong_post <- create_component_flag (data = CNMA_Data_c_pivotlong_post, component = "R")
+    CNMA_Data_c_pivotlong_post <- create_component_flag (data = CNMA_Data_c_pivotlong_post, component = "ME")
+    CNMA_Data_c_pivotlong_post <- create_component_flag (data = CNMA_Data_c_pivotlong_post, component = "VT")
+    CNMA_Data_c_pivotlong_post <- create_component_flag (data = CNMA_Data_c_pivotlong_post, component = "WTS")
+    CNMA_Data_c_pivotlong_post <- create_component_flag (data = CNMA_Data_c_pivotlong_post, component = "FF")
+    CNMA_Data_c_pivotlong_post <- create_component_flag (data = CNMA_Data_c_pivotlong_post, component = "WXA")
+    CNMA_Data_c_pivotlong_post <- create_component_flag (data = CNMA_Data_c_pivotlong_post, component = "MS2")
+    CNMA_Data_c_pivotlong_post <- create_component_flag (data = CNMA_Data_c_pivotlong_post, component = "BFS")
+    
+    CNMA_Data_c_pivotlong_post %>% count(component_bundle, NL, R, ME, VT, WTS, FF, WXA, MS2, BFS) %>% print(n=Inf)
+    
+    print(CNMA_Data_c_pivotlong_post, n=Inf)
+    
+    #-> Create component labels
     labdat <- data.frame(coding1 = c("NL", "R", "ME", "VT", "WTS", "FF", "WXA", "MS2", "BFS"))
     labs <- c("NL", "R", "ME", "VT", "WTS", "FF", "WXA", "MS2", "BFS")
     
@@ -493,29 +524,27 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
     for (i in 1:length(labdat$coding1)) {
       x <- as.character(labdat$coding1[i])
       lab <- as.character(labdat$coding1[i])
-      datas[[i]] <- rownames(subset(CNMA_Data_c, get(x) == 1))
+      datas[[i]] <- rownames(subset(CNMA_Data_c_pivotlong_post, get(x) == 1))
       names(datas)[i] <- lab
       rm(x,lab,i)
     }
     
-    datas
+    print(datas)
     
-    tabyl(CNMA_Data$NL)
-    tabyl(CNMA_Data$R)
-    tabyl(CNMA_Data$ME)
-    tabyl(CNMA_Data$VT)
-    tabyl(CNMA_Data$WTS)
-    tabyl(CNMA_Data$FF)
-    tabyl(CNMA_Data$WXA)
-    tabyl(CNMA_Data$MS2)
-    tabyl(CNMA_Data$BFS)
-    
-    CNMA_Data %>% count(intervention_component_bundle_oth_clean, comparison_component_bundle_clean) %>% print(n=Inf)
-    
+    #-> Check output in `datas` matches tabulations of each cmoponent
+    tabyl(CNMA_Data_c_pivotlong_post$NL)
+    tabyl(CNMA_Data_c_pivotlong_post$R)
+    tabyl(CNMA_Data_c_pivotlong_post$ME)
+    tabyl(CNMA_Data_c_pivotlong_post$VT)
+    tabyl(CNMA_Data_c_pivotlong_post$WTS)
+    tabyl(CNMA_Data_c_pivotlong_post$FF)
+    tabyl(CNMA_Data_c_pivotlong_post$WXA)
+    tabyl(CNMA_Data_c_pivotlong_post$MS2)
+    tabyl(CNMA_Data_c_pivotlong_post$BFS)
     
     #-> Reduce data down to component columns and add component labels
     comp <- labdat$coding1
-    x <- CNMA_Data_c[,comp]
+    x <- CNMA_Data_c_pivotlong_post[,comp]
     names(x) <- labs
     
     #-> compute phi-coefficients:
@@ -526,6 +555,9 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
              tl.cex = 1, tl.col = "black",
              number.cex = 1, number.font = 2, number.digits = 2,
              col=COL2("PRGn"), addCoef.col="black")
+    
+    #-> Compare output to raw data by tabulating the number of times each intervention bundle appears across both the "treatment" and "comparison" sides of all contrasts in the data
+    tabyl(CNMA_Data_c_pivotlong_post$component_bundle)
     
      
   #################################### NO MIRRORED CONTRASTS ####################################
