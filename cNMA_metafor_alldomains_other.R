@@ -11,7 +11,7 @@
   
   ## Install and load other required packages
   #install.packages("pacman") 
-  pacman::p_load(metafor, googlesheets4, dplyr, tidyr, skimr, testit, assertable, meta, netmeta, stringr, janitor, naniar, igraph, multcomp, broom, gridExtra, ggplot2, writexl, readr, grid, gridExtra, cowplot, extrafont, purrr, corrplot)
+  pacman::p_load(metafor, googlesheets4, dplyr, tidyr, skimr, testit, assertable, meta, netmeta, stringr, janitor, naniar, igraph, multcomp, broom, gridExtra, ggplot2, writexl, readr, grid, gridExtra, cowplot, extrafont, purrr, corrplot, circlize, ComplexHeatmap)
   
 # Load (read) data (i.e., copy data to 'dat')
 CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWVNLx1uksOu4QQlf2Xo7p4SZahPMio/edit?gid=931222966#gid=931222966&fvid=1356828720", sheet="Master Database") # <<CNMA master database>>
@@ -466,7 +466,7 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
     write_csv(lt_info_df3, file = "cnma_league_table.csv")
     #write_xlsx(lt_info_df3, 'cnma_league_table.xlsx')
     
-    ### Create heat map of correaltions
+    ### Create heat map of component correaltions indicating how often two components are given together
     
     #-> Pivot long so that components given together on the "comparison" side of TvsT contrasts also get included in the correlations
     #-> Note: The CNMA databases, both at the measure level (CNMA_data) and the contrast level (CNMA_data_c), are currently stored in wide format, with
@@ -565,6 +565,90 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
     #-> Compare output to raw data by tabulating the number of times each intervention bundle appears across both the "treatment" and "comparison" sides of all contrasts in the data
     tabyl(CNMA_Data_c_pivotlong_post$component_bundle)
     
+    ### Create heat map of the number of trial arms in which two components are both included.
+    
+    #-> Create component labels
+    labdat <- data.frame(coding1 = c("NL", "R", "ME", "VT", "WTS", "FF", "WXA", "MS2", "BFS"))
+    labs <- c("NL", "R", "ME", "VT", "WTS", "FF", "WXA", "MS2", "BFS")
+    
+    #   Generate object with data for plot - Which trial arms feature each component
+    datas <- vector("list",2)
+    for (i in 1:length(labdat$coding1)) {
+      x <- as.character(labdat$coding1[i])
+      lab <- as.character(labdat$coding1[i])
+      datas[[i]] <- rownames(subset(CNMA_Data_c_pivotlong_post, get(x) == 1))
+      names(datas)[i] <- lab
+      rm(x,lab,i)
+    }
+    
+    print(datas)
+    
+    #   Calculate number of components with each arm    
+    comp <- labdat$coding1
+    x <- CNMA_Data_c_pivotlong_post[,comp]
+    x$ncomps <- apply(x,1,sum)
+    
+    # Number of components
+    ncomps <- length(comp)
+    
+    # Set up empty matrix for matrix with number of pairs of component combinations
+    a <- matrix(nrow = ncomps, ncol = ncomps,
+                dimnames = list(labs,labs))
+    
+    #   Fill in the matrix:
+    for (i in 1: ncomps){
+      r <- x[,comp[i]]
+      for (j in 1:ncomps){
+        c <- x[,comp[j]]
+        a[i,j] <- with(x, sum(r==1 & c==1))
+        rm(j,c)
+      }
+      rm(i,r)
+    }
+    
+    # Choose colour scale for heatmap
+    col_fun = colorRamp2(c(0, 30), c("white", "red"))
+    
+    # Create lower triangle of a heatmap
+    Heatmap(a,
+            name = "N arms with\ncombination\n",
+            col = col_fun,
+            cluster_rows = FALSE, 
+            cluster_columns = FALSE, 
+            row_names_side = "left", 
+            row_names_max_width = unit(10, "cm"),
+            row_names_gp = gpar(fontsize = 15),
+            column_names_side = "bottom",
+            column_names_max_height = unit(10, "cm"),
+            column_names_gp = gpar(fontsize = 15),
+            column_title_gp = gpar(fontsize = 16, fontface = "bold"),
+            rect_gp = gpar(type = "none"),        
+            cell_fun = function(j, i, x, y, w, h, fill){
+              if( i>=j ){
+                grid.rect(x, y, w, h, 
+                          gp = gpar(fill = fill, col = fill))
+                grid.text(sprintf("%.0f", a[i, j]), 
+                          x, y, 
+                          gp = gpar(fontsize = 15))
+              }        
+            }
+    )
+    
+    #-> Compare output to raw data
+    tabyl(CNMA_Data_c_pivotlong_post$NL)
+    tabyl(CNMA_Data_c_pivotlong_post$R)
+    tabyl(CNMA_Data_c_pivotlong_post$ME)
+    tabyl(CNMA_Data_c_pivotlong_post$VT)
+    tabyl(CNMA_Data_c_pivotlong_post$WTS)
+    tabyl(CNMA_Data_c_pivotlong_post$FF)
+    tabyl(CNMA_Data_c_pivotlong_post$WXA)
+    tabyl(CNMA_Data_c_pivotlong_post$MS2)
+    tabyl(CNMA_Data_c_pivotlong_post$BFS)
+    
+    CNMA_Data_c_pivotlong_post %>% count(NL, R)
+    CNMA_Data_c_pivotlong_post %>% count(NL, ME)
+    CNMA_Data_c_pivotlong_post %>% count(FF, WTS)
+    CNMA_Data_c_pivotlong_post %>% count(MS2, VT)
      
   #################################### NO MIRRORED CONTRASTS ####################################
   
