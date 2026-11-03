@@ -468,24 +468,30 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
     
     ### Create heat map of correaltions
     
-    #-> Pivot long so that components given together on the "comparison" side of TvsT also get included in the correlations
-    #-> Note: The data are currently in wide format in which the intervention and comparison bundles are in two different columns.
-    #         As such, at the contrat-level, each row is a contrast. The code below identifies which components are given together
-    #         by using binary (1/0) columns in which each column name is the component label. The CNMA database uses contrast-coded (1/0/-1) 
-    #         columns for each component (in which each column name is also the component label) becasue some contrasts are T vs. T meaning 
-    #         the "comparison" side of these T vs. T contrasts have component bundles as well which should be taken into account
-    #         for the correlations. As such, the contrast-coded columns cannot be used becasue they do not capture the non-BAU
-    #         components on the comparison side of contrasts (they get coded 0 or 1 depending on if it exists on the "treatment" side as well).
-    #         As such, using the contrat-level CNMA data (because we do not want to double count when a contrast has more than one measure), 
-    #         we need to pivot the data long so that each side of a contrast is it's own row and then create the binary compoennt columns 
-    #         from the intervention bundle of each row. 
+    #-> Pivot long so that components given together on the "comparison" side of TvsT contrasts also get included in the correlations
+    #-> Note: The CNMA databases, both at the measure level (CNMA_data) and the contrast level (CNMA_data_c), are currently stored in wide format, with
+    #         the intervention and comparison component bundles contained in separate columns. For the component correlation analysis, we use the contrast-level
+    #         database (CNMA_data_c) because each row represents a unique study contrast. Some contrasts contribute multiple outcome measures, and using the
+    #         measure-level database would result in those study contrasts being counted multiple times when calculating component correlations.
+    #         
+    #         The code below is adapted from the supplementary materials of Freeman et al. (2023). Their approach identifies components that occur together within 
+    #         intervention bundles using binary (1/0) indicators, where each column corresponds to a component and indicates whether that component is present in a given bundle. 
+    #
+    #         Our CNMA database already contains component columns, but these are contrast-coded (1, 0, -1) for model estimation. A value of 1 indicates that a component appears 
+    #         only on the intervention side of a contrast, -1 indicates that it appears only on the comparison side, and 0 indicates either that the component is absent from both 
+    #         arms or that it appears in both arms and therefore cancels out in the contrast coding. These contrast-coded variables cannot be used directly to calculate component 
+    #         correlations because they do not represent simple component presence within intervention bundles. Components occurring on the comparison side of treatment-versus-treatment 
+    #         contrasts would be omitted, and components appearing in both arms would be coded as 0 despite being present in the underlying bundles.
+    #
+    #         Therefore, we first remove the contrast-coded component columns and pivot the intervention and comparison bundles into long format so that each bundle occupies its own row 
+    #         within a single component-bundle column. We then create new binary (1/0) presence indicators for each component. This ensures that all component bundles, regardless of whether 
+    #         they originally appeared on the intervention or comparison side of a contrast, contribute equally to the component co-occurrence and correlation analyses.
     
     CNMA_Data_c_pivotlong_pre <- CNMA_Data_c %>% dplyr::select(study_id, contrast_id, intervention_component_bundle_oth_clean, comparison_component_bundle_clean)
     CNMA_Data_c_pivotlong_pre <- CNMA_Data_c_pivotlong_pre %>% rename(intervention= intervention_component_bundle_oth_clean, comparison= comparison_component_bundle_clean)
     print(CNMA_Data_c_pivotlong_pre)
     CNMA_Data_c_pivotlong_post <- CNMA_Data_c_pivotlong_pre %>% pivot_longer(c(intervention, comparison), names_to= "component_bundle_clean", values_to= "component_bundle" )
     print(CNMA_Data_c_pivotlong_post, n=Inf)
-
     
     #-> Create component binaries 
     create_component_flag <- function(data, component, bundle_col = "component_bundle") {
