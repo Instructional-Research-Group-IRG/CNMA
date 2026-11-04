@@ -474,7 +474,7 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
     #         database (CNMA_data_c) because each row represents a unique study contrast. Some contrasts contribute multiple outcome measures, and using the
     #         measure-level database would result in those study contrasts being counted multiple times when calculating component correlations.
     #         
-    #         The code below is adapted from the supplementary materials of Freeman et al. (2023). Their approach identifies components that occur together within 
+    #         The code below is adapted from the supplemental materials of Freeman et al. (2023). Their approach identifies components that occur together within 
     #         intervention bundles using binary (1/0) indicators, where each column corresponds to a component and indicates whether that component is present in a given bundle. 
     #
     #         Our CNMA database already contains component columns, but these are contrast-coded (1, 0, -1) for model estimation. A value of 1 indicates that a component appears 
@@ -487,11 +487,13 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
     #         within a single component-bundle column. We then create new binary (1/0) presence indicators for each component. This ensures that all component bundles, regardless of whether 
     #         they originally appeared on the intervention or comparison side of a contrast, contribute equally to the component co-occurrence and correlation analyses.
     
-    CNMA_Data_c_pivotlong_pre <- CNMA_Data_c %>% dplyr::select(study_id, contrast_id, intervention_component_bundle_oth_clean, comparison_component_bundle_clean)
-    CNMA_Data_c_pivotlong_pre <- CNMA_Data_c_pivotlong_pre %>% rename(intervention= intervention_component_bundle_oth_clean, comparison= comparison_component_bundle_clean)
+    CNMA_Data_c %>% count(intervention_component_bundle_oth_clean, comparison_component_bundle_clean) %>% print(n=Inf)
+    CNMA_Data_c_pivotlong_pre <- CNMA_Data_c %>% dplyr::select(study_id, contrast_id, intervention_component_bundle_oth_clean, comparison_component_bundle_clean) %>% 
+                                                 rename(intervention= intervention_component_bundle_oth_clean, comparison= comparison_component_bundle_clean)
     print(CNMA_Data_c_pivotlong_pre)
     CNMA_Data_c_pivotlong_post <- CNMA_Data_c_pivotlong_pre %>% pivot_longer(c(intervention, comparison), names_to= "component_bundle_clean", values_to= "component_bundle" )
     print(CNMA_Data_c_pivotlong_post, n=Inf)
+    CNMA_Data_c_pivotlong_post %>% count(component_bundle) %>% print(n=Inf)
     
     #-> Create component binaries 
     create_component_flag <- function(data, component, bundle_col = "component_bundle") {
@@ -518,12 +520,14 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
     CNMA_Data_c_pivotlong_post <- create_component_flag (data = CNMA_Data_c_pivotlong_post, component = "BFS")
     
     CNMA_Data_c_pivotlong_post %>% count(component_bundle, NL, R, ME, VT, WTS, FF, WXA, MS2, BFS) %>% print(n=Inf)
-    
     print(CNMA_Data_c_pivotlong_post, n=Inf)
     
+    CNMA_Data_c_pivotlong_post <- CNMA_Data_c_pivotlong_post %>% rename(MSS=MS2)
+    CNMA_Data_c_pivotlong_post %>% count(component_bundle, NL, R, ME, VT, WTS, FF, WXA, MSS, BFS) %>% print(n=Inf)
+    
     #-> Create component labels
-    labdat <- data.frame(coding1 = c("NL", "R", "ME", "VT", "WTS", "FF", "WXA", "MS2", "BFS"))
-    labs <- c("NL", "R", "ME", "VT", "WTS", "FF", "WXA", "MS2", "BFS")
+    labdat <- data.frame(coding1 = c("NL", "R", "ME", "VT", "WTS", "FF", "WXA", "MSS", "BFS"))
+    labs <- c("NL", "R", "ME", "VT", "WTS", "FF", "WXA", "MSS", "BFS")
     
     #-> Generate object with data for plot - Which trial arms feature each component
     datas <- vector("list",2)
@@ -545,7 +549,7 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
     tabyl(CNMA_Data_c_pivotlong_post$WTS)
     tabyl(CNMA_Data_c_pivotlong_post$FF)
     tabyl(CNMA_Data_c_pivotlong_post$WXA)
-    tabyl(CNMA_Data_c_pivotlong_post$MS2)
+    tabyl(CNMA_Data_c_pivotlong_post$MSS)
     tabyl(CNMA_Data_c_pivotlong_post$BFS)
     
     #-> Reduce data down to component columns and add component labels
@@ -568,8 +572,8 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
     ### Create heat map of the number of trial arms in which two components are both included.
     
     #-> Create component labels
-    labdat <- data.frame(coding1 = c("NL", "R", "ME", "VT", "WTS", "FF", "WXA", "MS2", "BFS"))
-    labs <- c("NL", "R", "ME", "VT", "WTS", "FF", "WXA", "MS2", "BFS")
+    labdat <- data.frame(coding1 = c("NL", "R", "ME", "VT", "WTS", "FF", "WXA", "MSS", "BFS"))
+    labs <- c("NL", "R", "ME", "VT", "WTS", "FF", "WXA", "MSS", "BFS")
     
     #   Generate object with data for plot - Which trial arms feature each component
     datas <- vector("list",2)
@@ -642,13 +646,13 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
     tabyl(CNMA_Data_c_pivotlong_post$WTS)
     tabyl(CNMA_Data_c_pivotlong_post$FF)
     tabyl(CNMA_Data_c_pivotlong_post$WXA)
-    tabyl(CNMA_Data_c_pivotlong_post$MS2)
+    tabyl(CNMA_Data_c_pivotlong_post$MSS)
     tabyl(CNMA_Data_c_pivotlong_post$BFS)
     
     CNMA_Data_c_pivotlong_post %>% count(NL, R)
     CNMA_Data_c_pivotlong_post %>% count(NL, ME)
     CNMA_Data_c_pivotlong_post %>% count(FF, WTS)
-    CNMA_Data_c_pivotlong_post %>% count(MS2, VT)
+    CNMA_Data_c_pivotlong_post %>% count(MSS, VT)
      
   #################################### NO MIRRORED CONTRASTS ####################################
   
