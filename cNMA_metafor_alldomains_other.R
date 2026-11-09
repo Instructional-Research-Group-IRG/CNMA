@@ -136,19 +136,19 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
       #### Strategy Instruction-  multi step strategy or basic fact strategy taught
       CNMA_Data <- CNMA_Data %>% rename(WP2_TX = `2_WPS_word problem specific [strategy]`)
       
-      inspect_categorical(CNMA_Data, MS2_TX) # Column BR
+      inspect_categorical(CNMA_Data, MSS_TX) # Column BR
       inspect_categorical(CNMA_Data, WPS_TX) # Column BS   
       inspect_categorical(CNMA_Data, WP2_TX) # Column BT
       inspect_categorical(CNMA_Data, MS_TX) # Column BU
       inspect_categorical(CNMA_Data, BFS_TX) # Column BV   
       
-      inspect_categorical(CNMA_Data, MS2_COMP) # Column DP
+      inspect_categorical(CNMA_Data, MSS_COMP) # Column DP
       inspect_categorical(CNMA_Data, WPS_COMP) # Column DQ  
       inspect_categorical(CNMA_Data, WP2_COMP) # Column DR
       inspect_categorical(CNMA_Data, MS_COMP) # Column DS
       inspect_categorical(CNMA_Data, BFS_COMP) # Column DT 
       
-      CNMA_Data %>% count(MS2_TX, WPS_TX, WP2_TX, MS_TX, BFS_TX, MS2_COMP, WPS_COMP, WP2_COMP, MS_COMP, BFS_COMP) %>% print(n = Inf) 
+      CNMA_Data %>% count(MSS_TX, WPS_TX, WP2_TX, MS_TX, BFS_TX, MSS_COMP, WPS_COMP, WP2_COMP, MS_COMP, BFS_COMP) %>% print(n = Inf) 
       
       #### Other- for mirrored contrasts
       inspect_categorical(CNMA_Data, O_TX) # Column BW  
@@ -195,9 +195,9 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
   CNMA_Data <- replace_na_specific(CNMA_Data, c("WXA_TX", "WXP_TX", "WXA_COMP", "WXP_COMP"))  
   CNMA_Data %>% count(WXA_TX, WXP_TX, WXA_COMP, WXP_COMP) %>% print(n = Inf)  
   
-  CNMA_Data %>% count(MS2_TX, WPS_TX, WP2_TX, MS_TX, BFS_TX, MS2_COMP, WPS_COMP, WP2_COMP, MS_COMP, BFS_COMP) %>% print(n = Inf) 
-  CNMA_Data <- replace_na_specific(CNMA_Data, c("MS2_TX", "WPS_TX", "WP2_TX", "MS_TX", "BFS_TX", "MS2_COMP", "WPS_COMP", "WP2_COMP", "MS_COMP", "BFS_COMP"))
-  CNMA_Data %>% count(MS2_TX, WPS_TX, WP2_TX, MS_TX, BFS_TX, MS2_COMP, WPS_COMP, WP2_COMP, MS_COMP, BFS_COMP) %>% print(n = Inf) 
+  CNMA_Data %>% count(MSS_TX, WPS_TX, WP2_TX, MS_TX, BFS_TX, MSS_COMP, WPS_COMP, WP2_COMP, MS_COMP, BFS_COMP) %>% print(n = Inf) 
+  CNMA_Data <- replace_na_specific(CNMA_Data, c("MSS_TX", "WPS_TX", "WP2_TX", "MS_TX", "BFS_TX", "MSS_COMP", "WPS_COMP", "WP2_COMP", "MS_COMP", "BFS_COMP"))
+  CNMA_Data %>% count(MSS_TX, WPS_TX, WP2_TX, MS_TX, BFS_TX, MSS_COMP, WPS_COMP, WP2_COMP, MS_COMP, BFS_COMP) %>% print(n = Inf) 
   
   CNMA_Data %>% count(O_TX) %>% print(n = Inf) 
   CNMA_Data <- replace_na_specific(CNMA_Data, c("O_TX"))
@@ -218,10 +218,10 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
         ungroup()
     }
     
-    CNMA_Data <- make_indicator_labels_plus(CNMA_Data, c("NL_TX", "R_TX", "ME_TX", "VT_TX", "WTS_TX", "FF_TX", "WXA_TX", "MS2_TX", "BFS_TX")) #This version only includes the componets we are entering as modertors in the CNMA fitted with the rma.mv() function below: NL + R + ME + VT + WTS + FF + WXA + MS2 + BFS
+    CNMA_Data <- make_indicator_labels_plus(CNMA_Data, c("NL_TX", "R_TX", "ME_TX", "VT_TX", "WTS_TX", "FF_TX", "WXA_TX", "MSS_TX", "BFS_TX")) #This version only includes the componets we are entering as modertors in the CNMA fitted with the rma.mv() function below: NL + R + ME + VT + WTS + FF + WXA + MSS + BFS
     tabyl(CNMA_Data$intervention_component_bundle)
     class(CNMA_Data$intervention_component_bundle)
-    CNMA_Data %>% count(intervention_component_bundle, NL_TX, R_TX, ME_TX, VT_TX, WTS_TX, FF_TX, WXA_TX, MS2_TX, BFS_TX) %>% print(n = Inf)
+    CNMA_Data %>% count(intervention_component_bundle, NL_TX, R_TX, ME_TX, VT_TX, WTS_TX, FF_TX, WXA_TX, MSS_TX, BFS_TX) %>% print(n = Inf)
     
     ### Create intervention_component_bundle_oth
     #-> Note: This versison includes the "Other" component ("O_TX") for mirrored contrasts
@@ -236,10 +236,10 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
         ungroup()
     }
     
-    CNMA_Data <- make_indicator_labels_plus(CNMA_Data, c("NL_TX", "R_TX", "ME_TX", "VT_TX", "WTS_TX", "FF_TX", "WXA_TX", "MS2_TX", "BFS_TX", "O_TX")) #This version only includes the componets we are entering as modertors in the CNMA fitted with the rma.mv() function below: NL + R + ME + VT + WTS + FF + WXA + MS2 + BFS
+    CNMA_Data <- make_indicator_labels_plus(CNMA_Data, c("NL_TX", "R_TX", "ME_TX", "VT_TX", "WTS_TX", "FF_TX", "WXA_TX", "MSS_TX", "BFS_TX", "O_TX")) #This version only includes the componets we are entering as modertors in the CNMA fitted with the rma.mv() function below: NL + R + ME + VT + WTS + FF + WXA + MSS + BFS
     tabyl(CNMA_Data$intervention_component_bundle_oth)
     class(CNMA_Data$intervention_component_bundle_oth)
-    CNMA_Data %>% count(intervention_component_bundle_oth, NL_TX, R_TX, ME_TX, VT_TX, WTS_TX, FF_TX, WXA_TX, MS2_TX, BFS_TX, O_TX) %>% print(n = Inf)
+    CNMA_Data %>% count(intervention_component_bundle_oth, NL_TX, R_TX, ME_TX, VT_TX, WTS_TX, FF_TX, WXA_TX, MSS_TX, BFS_TX, O_TX) %>% print(n = Inf)
     
     ### comparison_component_bundle
     make_indicator_labels_plus <- function(df, cols, new_col = "comparison_component_bundle") {
@@ -253,11 +253,11 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
         ungroup()
     }
     
-    CNMA_Data <- make_indicator_labels_plus(CNMA_Data, c("NL_COMP", "R_COMP", "ME_COMP", "VT_COMP", "WTS_COMP", "FF_COMP", "WXA_COMP", "MS2_COMP", "BFS_COMP")) #This version only includes the componets we are entering as modertors in the CNMA fitted with the rma.mv() function below: NL + R + ME + VT + WTS + FF + WXA + MS2 + BFS
+    CNMA_Data <- make_indicator_labels_plus(CNMA_Data, c("NL_COMP", "R_COMP", "ME_COMP", "VT_COMP", "WTS_COMP", "FF_COMP", "WXA_COMP", "MSS_COMP", "BFS_COMP")) #This version only includes the componets we are entering as modertors in the CNMA fitted with the rma.mv() function below: NL + R + ME + VT + WTS + FF + WXA + MSS + BFS
     CNMA_Data <- CNMA_Data %>% mutate(comparison_component_bundle = if_else(comparison_component_bundle == "", "BAU", comparison_component_bundle))
     tabyl(CNMA_Data$comparison_component_bundle)
     class(CNMA_Data$comparison_component_bundle)
-    CNMA_Data %>% count(comparison_component_bundle, NL_COMP, R_COMP, ME_COMP, VT_COMP, WTS_COMP, FF_COMP, WXA_COMP, MS2_COMP, BFS_COMP) %>% print(n = Inf)
+    CNMA_Data %>% count(comparison_component_bundle, NL_COMP, R_COMP, ME_COMP, VT_COMP, WTS_COMP, FF_COMP, WXA_COMP, MSS_COMP, BFS_COMP) %>% print(n = Inf)
     
   ## Create contrast codes   
   make_contrast_column <- function(df, col1, col2, new_col) {
@@ -321,8 +321,8 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
   CNMA_Data <- make_contrast_column(CNMA_Data, "WXP_TX", "WXP_COMP", WXP)
   CNMA_Data %>% count(WXP_TX, WXP_COMP, WXP) %>% print(n = Inf)  
 
-  CNMA_Data <- make_contrast_column(CNMA_Data, "MS2_TX", "MS2_COMP", MS2)
-  CNMA_Data %>% count(MS2_TX, MS2_COMP, MS2) %>% print(n = Inf)
+  CNMA_Data <- make_contrast_column(CNMA_Data, "MSS_TX", "MSS_COMP", MSS)
+  CNMA_Data %>% count(MSS_TX, MSS_COMP, MSS) %>% print(n = Inf)
   
   CNMA_Data <- make_contrast_column(CNMA_Data, "WPS_TX", "WPS_COMP", WPS)
   CNMA_Data %>% count(WPS_TX, WPS_COMP, WPS) %>% print(n = Inf)
@@ -417,9 +417,9 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
     
       #### CNMA with "Other" component included for mirrored contrasts
       res_mod_cnma <- rma.mv(effect_size, V_list_cnma, 
-                                 # mods = ~ NL + N + R + RV + ME + VT + WTS + SV + FF + FO + BR + MR + PREXTRA + BX + WXA + WXP + MS2 + WPS + WP2 + BFS - 1, # Full list of available contrast-coded components for reference.
-                                 # mods = ~ NL + R + ME + VT + WTS + FF + BR + MR + WXA + MS2 + BFS - 1, # Original shortlist of components for inlcudion in CNMA for reference.
-                                 mods = ~ NL + R + ME + VT + WTS + FF + WXA + MS2 + BFS + O - 1, # BAU is excluded to serve as the reference level for the comparisons.
+                                 # mods = ~ NL + N + R + RV + ME + VT + WTS + SV + FF + FO + BR + MR + PREXTRA + BX + WXA + WXP + MSS + WPS + WP2 + BFS - 1, # Full list of available contrast-coded components for reference.
+                                 # mods = ~ NL + R + ME + VT + WTS + FF + BR + MR + WXA + MSS + BFS - 1, # Original shortlist of components for inlcudion in CNMA for reference.
+                                 mods = ~ NL + R + ME + VT + WTS + FF + WXA + MSS + BFS + O - 1, # BAU is excluded to serve as the reference level for the comparisons.
                                  random = ~ 1 | study_id/contrast_id/es_id,
                                  rho=0.60, 
                                  data=CNMA_Data)
@@ -427,9 +427,9 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
       
       #### CNMA without "Other" component included for mirrored contrasts
       # res_mod_cnma_nooth <- rma.mv(effect_size, V_list_cnma,
-      #                            # mods = ~ NL + N + R + RV + ME + VT + WTS + SV + FF + FO + BR + MR + PREXTRA + BX + WXA + WXP + MS2 + WPS + WP2 + BFS - 1, # Full list of available contrast-coded components for reference.
-      #                            # mods = ~ NL + R + ME + VT + WTS + FF + BR + MR + WXA + MS2 + BFS - 1, # Original shortlist of components for inlcudion in CNMA for reference.
-      #                            mods = ~ NL + R + ME + VT + WTS + FF + WXA + MS2 + BFS - 1, # BAU is excluded to serve as the reference level for the comparisons.
+      #                            # mods = ~ NL + N + R + RV + ME + VT + WTS + SV + FF + FO + BR + MR + PREXTRA + BX + WXA + WXP + MSS + WPS + WP2 + BFS - 1, # Full list of available contrast-coded components for reference.
+      #                            # mods = ~ NL + R + ME + VT + WTS + FF + BR + MR + WXA + MSS + BFS - 1, # Original shortlist of components for inlcudion in CNMA for reference.
+      #                            mods = ~ NL + R + ME + VT + WTS + FF + WXA + MSS + BFS - 1, # BAU is excluded to serve as the reference level for the comparisons.
       #                            random = ~ 1 | study_id/contrast_id/es_id,
       #                            rho=0.60,
       #                            data=CNMA_Data)
@@ -516,13 +516,13 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
     CNMA_Data_c_pivotlong_post <- create_component_flag (data = CNMA_Data_c_pivotlong_post, component = "WTS")
     CNMA_Data_c_pivotlong_post <- create_component_flag (data = CNMA_Data_c_pivotlong_post, component = "FF")
     CNMA_Data_c_pivotlong_post <- create_component_flag (data = CNMA_Data_c_pivotlong_post, component = "WXA")
-    CNMA_Data_c_pivotlong_post <- create_component_flag (data = CNMA_Data_c_pivotlong_post, component = "MS2")
+    CNMA_Data_c_pivotlong_post <- create_component_flag (data = CNMA_Data_c_pivotlong_post, component = "MSS")
     CNMA_Data_c_pivotlong_post <- create_component_flag (data = CNMA_Data_c_pivotlong_post, component = "BFS")
     
-    CNMA_Data_c_pivotlong_post %>% count(component_bundle, NL, R, ME, VT, WTS, FF, WXA, MS2, BFS) %>% print(n=Inf)
+    CNMA_Data_c_pivotlong_post %>% count(component_bundle, NL, R, ME, VT, WTS, FF, WXA, MSS, BFS) %>% print(n=Inf)
     print(CNMA_Data_c_pivotlong_post, n=Inf)
     
-    CNMA_Data_c_pivotlong_post <- CNMA_Data_c_pivotlong_post %>% rename(MSS=MS2)
+    #CNMA_Data_c_pivotlong_post <- CNMA_Data_c_pivotlong_post %>% rename(MSS=MS2)
     CNMA_Data_c_pivotlong_post %>% count(component_bundle, NL, R, ME, VT, WTS, FF, WXA, MSS, BFS) %>% print(n=Inf)
     
     #-> Create component labels
@@ -676,9 +676,9 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
 
     ### Fit additive CNMA model
     res_mod_nomirrors_cnma <- rma.mv(effect_size, V_list_cnma_nomirrors, 
-                                # mods = ~ NL + N + R + RV + ME + VT + WTS + SV + FF + FO + BR + MR + PREXTRA + BX + WXA + WXP + MS2 + WPS + WP2 + BFS - 1, # Full list of available contrast-coded components for reference.
-                                # mods = ~ NL + R + ME + VT + WTS + FF + BR + MR + WXA + MS2 + BFS - 1, # Original shortlist of components for inlcudion in CNMA for reference.
-                                mods = ~ NL + R + ME + VT + WTS + FF + WXA + MS2 + BFS - 1, # BAU is excluded to serve as the reference level for the comparisons.
+                                # mods = ~ NL + N + R + RV + ME + VT + WTS + SV + FF + FO + BR + MR + PREXTRA + BX + WXA + WXP + MSS + WPS + WP2 + BFS - 1, # Full list of available contrast-coded components for reference.
+                                # mods = ~ NL + R + ME + VT + WTS + FF + BR + MR + WXA + MSS + BFS - 1, # Original shortlist of components for inlcudion in CNMA for reference.
+                                mods = ~ NL + R + ME + VT + WTS + FF + WXA + MSS + BFS - 1, # BAU is excluded to serve as the reference level for the comparisons.
                                 random = ~ 1 | study_id/contrast_id/es_id,
                                 rho=0.60, 
                                 data=CNMA_Data_nomirrors)
@@ -752,11 +752,11 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
       tabyl(NMA_Data$intervention_component_bundle_oth_clean)
       tabyl(NMA_Data$comparison_component_bundle_clean)
       res_mod_nma <- rma.mv(effect_size, V_list_nma, 
-                              mods = ~ FF  + FF.BFS +  FF.MS2 + FF.MS2.BFS +  ME.FF.MS2.BFS + ME.VT.WXA + ME.VT.WXA.O + MS2 + NL.R + NL.R.FF.BFS + NL.R.ME.VT.WTS.FF.MS2 + NL.R.ME.VT.WTS.MS2 +
-                                        NL.R.VT.FF.WXA.MS2 + NL.R.VT.O + NL.R.VT + NL.R.VT.WTS.FF.MS2 + NL.R.VT.WTS.FF.MS2.BFS + NL.R.VT.WTS.FF.MS2.BFS.O + NL.R.VT.WTS.FF.MS2.O + NL.R.VT.WTS.MS2 +
-                                        R + R.BFS + R.BFS.O + R.FF.BFS + R.FF.BFS.O + R.FF.MS2 + R.FF.MS2.BFS + R.ME.VT.MS2 + R.MS2 + R.VT + R.VT.BFS + R.VT.BFS.O + R.VT.FF.BFS +
-                                        R.VT.FF.MS2.BFS + R.VT.FF.MS2.BFS.O + R.VT.FF.WXA.MS2.BFS + R.VT.MS2 + R.VT.MS2.BFS + R.VT.MS2.BFS.O + R.VT.WTS.FF.MS2 + R.VT.WTS.FF.WXA.MS2.BFS +
-                                        R.VT.WTS.MS2 + R.VT.WXA.MS2 + R.WTS.FF.BFS + R.WTS.FF.MS2.BFS + VT + VT.MS2 + WTS.FF
+                              mods = ~ FF  + FF.BFS +  FF.MSS + FF.MSS.BFS +  ME.FF.MSS.BFS + ME.VT.WXA + ME.VT.WXA.O + MSS + NL.R + NL.R.FF.BFS + NL.R.ME.VT.WTS.FF.MSS + NL.R.ME.VT.WTS.MSS +
+                                        NL.R.VT.FF.WXA.MSS + NL.R.VT.O + NL.R.VT + NL.R.VT.WTS.FF.MSS + NL.R.VT.WTS.FF.MSS.BFS + NL.R.VT.WTS.FF.MSS.BFS.O + NL.R.VT.WTS.FF.MSS.O + NL.R.VT.WTS.MSS +
+                                        R + R.BFS + R.BFS.O + R.FF.BFS + R.FF.BFS.O + R.FF.MSS + R.FF.MSS.BFS + R.ME.VT.MSS + R.MSS + R.VT + R.VT.BFS + R.VT.BFS.O + R.VT.FF.BFS +
+                                        R.VT.FF.MSS.BFS + R.VT.FF.MSS.BFS.O + R.VT.FF.WXA.MSS.BFS + R.VT.MSS + R.VT.MSS.BFS + R.VT.MSS.BFS.O + R.VT.WTS.FF.MSS + R.VT.WTS.FF.WXA.MSS.BFS +
+                                        R.VT.WTS.MSS + R.VT.WXA.MSS + R.WTS.FF.BFS + R.WTS.FF.MSS.BFS + VT + VT.MSS + WTS.FF
                                      - 1, # BAU is excluded to serve as the reference level for the comparisons.
                               #random = ~ 1 | study_id/es_id,
                               random = ~ 1 | study_id/contrast_id/es_id,
@@ -768,9 +768,9 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
       # tabyl(NMA_Data_nooth$intervention_component_bundle_clean)
       # tabyl(NMA_Data_nooth$comparison_component_bundle_clean)
       # res_mod_nma_nooth <- rma.mv(effect_size, V_list_nma_nooth,
-      #                                 mods = ~ FF + FF.BFS + FF.MS2 + FF.MS2.BFS + ME.FF.MS2.BFS + ME.VT.WXA + MS2 + NL.R + NL.R.FF.BFS + NL.R.ME.VT.WTS.FF.MS2 + NL.R.ME.VT.WTS.MS2 + NL.R.VT + NL.R.VT.FF.WXA.MS2 + NL.R.VT.WTS.FF.MS2 + NL.R.VT.WTS.FF.MS2.BFS +
-      #                                          NL.R.VT.WTS.MS2 + R + R.BFS + R.FF.BFS + R.FF.MS2 + R.FF.MS2.BFS + R.ME.VT.MS2 + R.MS2 + R.VT + R.VT.BFS + R.VT.FF.BFS + R.VT.FF.MS2.BFS + R.VT.FF.WXA.MS2.BFS + R.VT.MS2 + R.VT.MS2.BFS + R.VT.WTS.FF.MS2 +
-      #                                          R.VT.WTS.FF.WXA.MS2.BFS + R.VT.WTS.MS2 + R.VT.WXA.MS2 + R.WTS.FF.BFS + R.WTS.FF.MS2.BFS + VT + VT.MS2 + WTS.FF
+      #                                 mods = ~ FF + FF.BFS + FF.MSS + FF.MSS.BFS + ME.FF.MSS.BFS + ME.VT.WXA + MSS + NL.R + NL.R.FF.BFS + NL.R.ME.VT.WTS.FF.MSS + NL.R.ME.VT.WTS.MSS + NL.R.VT + NL.R.VT.FF.WXA.MSS + NL.R.VT.WTS.FF.MSS + NL.R.VT.WTS.FF.MSS.BFS +
+      #                                          NL.R.VT.WTS.MSS + R + R.BFS + R.FF.BFS + R.FF.MSS + R.FF.MSS.BFS + R.ME.VT.MSS + R.MSS + R.VT + R.VT.BFS + R.VT.FF.BFS + R.VT.FF.MSS.BFS + R.VT.FF.WXA.MSS.BFS + R.VT.MSS + R.VT.MSS.BFS + R.VT.WTS.FF.MSS +
+      #                                          R.VT.WTS.FF.WXA.MSS.BFS + R.VT.WTS.MSS + R.VT.WXA.MSS + R.WTS.FF.BFS + R.WTS.FF.MSS.BFS + VT + VT.MSS + WTS.FF
       #                                         - 1, # BAU is excluded to serve as the reference level for the comparisons.
       #                                 #random = ~ 1 | study_id/es_id,
       #                                 random = ~ 1 | study_id/contrast_id/es_id,
@@ -922,9 +922,9 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
     tabyl(NMA_Data_nomirrors$intervention_component_bundle_clean)
     tabyl(NMA_Data_nomirrors$comparison_component_bundle_clean)
     res_mod_nomirrors_nma <- rma.mv(effect_size, V_list_nma_nomirrors, 
-                               mods = ~ FF + FF.BFS + FF.MS2 + FF.MS2.BFS + ME.FF.MS2.BFS + ME.VT.WXA + MS2 + NL.R + NL.R.FF.BFS + NL.R.ME.VT.WTS.FF.MS2 + NL.R.ME.VT.WTS.MS2 + NL.R.VT.FF.WXA.MS2 + NL.R.VT.WTS.FF.MS2 + NL.R.VT.WTS.FF.MS2.BFS +
-                               NL.R.VT.WTS.MS2 + R + R.BFS + R.FF.BFS + R.FF.MS2 + R.FF.MS2.BFS + R.ME.VT.MS2 + R.MS2 + R.VT + R.VT.BFS + R.VT.FF.BFS + R.VT.FF.MS2.BFS + R.VT.FF.WXA.MS2.BFS + R.VT.MS2 + R.VT.MS2.BFS + R.VT.WTS.FF.MS2 +
-                               R.VT.WTS.FF.WXA.MS2.BFS + R.VT.WTS.MS2 + R.VT.WXA.MS2 + R.WTS.FF.BFS + R.WTS.FF.MS2.BFS + VT + VT.MS2 + WTS.FF 
+                               mods = ~ FF + FF.BFS + FF.MSS + FF.MSS.BFS + ME.FF.MSS.BFS + ME.VT.WXA + MSS + NL.R + NL.R.FF.BFS + NL.R.ME.VT.WTS.FF.MSS + NL.R.ME.VT.WTS.MSS + NL.R.VT.FF.WXA.MSS + NL.R.VT.WTS.FF.MSS + NL.R.VT.WTS.FF.MSS.BFS +
+                               NL.R.VT.WTS.MSS + R + R.BFS + R.FF.BFS + R.FF.MSS + R.FF.MSS.BFS + R.ME.VT.MSS + R.MSS + R.VT + R.VT.BFS + R.VT.FF.BFS + R.VT.FF.MSS.BFS + R.VT.FF.WXA.MSS.BFS + R.VT.MSS + R.VT.MSS.BFS + R.VT.WTS.FF.MSS +
+                               R.VT.WTS.FF.WXA.MSS.BFS + R.VT.WTS.MSS + R.VT.WXA.MSS + R.WTS.FF.BFS + R.WTS.FF.MSS.BFS + VT + VT.MSS + WTS.FF 
                                - 1, # BAU is excluded to serve as the reference level for the comparisons.
                                #random = ~ 1 | study_id/es_id,
                                random = ~ 1 | study_id/contrast_id/es_id,
