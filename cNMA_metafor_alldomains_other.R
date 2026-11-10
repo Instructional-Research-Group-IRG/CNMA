@@ -466,6 +466,11 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
     write_csv(lt_info_df3, file = "cnma_league_table.csv")
     #write_xlsx(lt_info_df3, 'cnma_league_table.xlsx')
     
+    ### Review component correlations
+    res_mod_cnma_model_matrix <- model.matrix(res_mod_cnma)
+    cor(res_mod_cnma_model_matrix)
+    corrplot::corrplot(cor(res_mod_cnma_model_matrix))
+    
     ### Create CNMA Visualizations
     
       #-> Note: The CNMA databases, both at the measure level (CNMA_data) and the contrast level (CNMA_data_c), are currently stored in wide format, with
@@ -487,7 +492,8 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
       #         they originally appeared on the intervention or comparison side of a contrast, contribute equally to the component co-occurrence and correlation analyses.
       
       #### Pivot long so that components given together on the "comparison" side of TvsT contrasts also get included in the correlations
-    
+        
+        #-> Pivot long with respect to the study arms
         CNMA_Data_c %>% count(intervention_component_bundle_oth_clean, comparison_component_bundle_clean) %>% print(n=Inf)
         CNMA_Data_c_pivotlong_pre <- CNMA_Data_c %>% dplyr::select(study_id, contrast_id, intervention_component_bundle_oth_clean, comparison_component_bundle_clean) %>% 
           rename(intervention= intervention_component_bundle_oth_clean, comparison= comparison_component_bundle_clean)
@@ -660,6 +666,7 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
         CNMA_Data_c_pivotlong_post_df <- as.data.frame(CNMA_Data_c_pivotlong_post)
         CNMA_Data_c_pivotlong_post_df
         
+        #-> Create UpSet plot
         upset(CNMA_Data_c_pivotlong_post_df, nsets = 9, nintersects = NA, number.angles = 0, 
               point.size = 2, 
               line.size = 0.7, 
