@@ -11,7 +11,7 @@
   
   ## Install and load other required packages
   #install.packages("pacman") 
-  pacman::p_load(metafor, googlesheets4, dplyr, tidyr, skimr, testit, assertable, meta, netmeta, stringr, janitor, naniar, igraph, multcomp, broom, gridExtra, ggplot2, writexl, readr, grid, gridExtra, cowplot, extrafont, purrr, corrplot, circlize, ComplexHeatmap)
+  pacman::p_load(metafor, googlesheets4, dplyr, tidyr, skimr, testit, assertable, meta, netmeta, stringr, janitor, naniar, igraph, multcomp, broom, gridExtra, ggplot2, writexl, readr, grid, gridExtra, cowplot, extrafont, purrr, corrplot, circlize, ComplexHeatmap, UpSetR)
   
 # Load (read) data (i.e., copy data to 'dat')
 CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWVNLx1uksOu4QQlf2Xo7p4SZahPMio/edit?gid=931222966#gid=931222966&fvid=1356828720", sheet="Master Database") # <<CNMA master database>>
@@ -466,193 +466,226 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
     write_csv(lt_info_df3, file = "cnma_league_table.csv")
     #write_xlsx(lt_info_df3, 'cnma_league_table.xlsx')
     
-    ### Create heat map of component correaltions indicating how often two components are given together
+    ### Create CNMA Visualizations
     
-    #-> Pivot long so that components given together on the "comparison" side of TvsT contrasts also get included in the correlations
-    #-> Note: The CNMA databases, both at the measure level (CNMA_data) and the contrast level (CNMA_data_c), are currently stored in wide format, with
-    #         the intervention and comparison component bundles contained in separate columns. For the component correlation analysis, we use the contrast-level
-    #         database (CNMA_data_c) because each row represents a unique study contrast. Some contrasts contribute multiple outcome measures, and using the
-    #         measure-level database would result in those study contrasts being counted multiple times when calculating component correlations.
-    #         
-    #         The code below is adapted from the supplemental materials of Freeman et al. (2023). Their approach identifies components that occur together within 
-    #         intervention bundles using binary (1/0) indicators, where each column corresponds to a component and indicates whether that component is present in a given bundle. 
-    #
-    #         Our CNMA database already contains component columns, but these are contrast-coded (1, 0, -1) for model estimation. A value of 1 indicates that a component appears 
-    #         only on the intervention side of a contrast, -1 indicates that it appears only on the comparison side, and 0 indicates either that the component is absent from both 
-    #         arms or that it appears in both arms and therefore cancels out in the contrast coding. These contrast-coded variables cannot be used directly to calculate component 
-    #         correlations because they do not represent simple component presence within intervention bundles. Components occurring on the comparison side of treatment-versus-treatment 
-    #         contrasts would be omitted, and components appearing in both arms would be coded as 0 despite being present in the underlying bundles.
-    #
-    #         Therefore, we first remove the contrast-coded component columns and pivot the intervention and comparison bundles into long format so that each bundle occupies its own row 
-    #         within a single component-bundle column. We then create new binary (1/0) presence indicators for each component. This ensures that all component bundles, regardless of whether 
-    #         they originally appeared on the intervention or comparison side of a contrast, contribute equally to the component co-occurrence and correlation analyses.
+      #-> Note: The CNMA databases, both at the measure level (CNMA_data) and the contrast level (CNMA_data_c), are currently stored in wide format, with
+      #         the intervention and comparison component bundles contained in separate columns. For the CNMA data visualizations below, we use the contrast-level
+      #         database (CNMA_data_c) because each row represents a unique study contrast. Some contrasts contribute multiple outcome measures, and using the
+      #         measure-level database would result in those study contrasts being counted multiple times when calculating component correlations.
+      #         
+      #         The scripts below are adapted from the supplemental materials of Freeman et al. (2023). Their approach identifies components that occur together within 
+      #         intervention bundles using binary (1/0) indicators, where each column corresponds to a component and indicates whether that component is present in a given bundle. 
+      #
+      #         Our CNMA database already contains component columns, but these are contrast-coded (1, 0, -1) for model estimation. A value of 1 indicates that a component appears 
+      #         only on the intervention side of a contrast, -1 indicates that it appears only on the comparison side, and 0 indicates either that the component is absent from both 
+      #         arms or that it appears in both arms and therefore cancels out in the contrast coding. These contrast-coded variables cannot be used directly to calculate component 
+      #         correlations because they do not represent simple component presence within intervention bundles. Components occurring on the comparison side of treatment-versus-treatment 
+      #         contrasts would be omitted, and components appearing in both arms would be coded as 0 despite being present in the underlying bundles.
+      #
+      #         Therefore, we first remove the contrast-coded component columns and pivot the intervention and comparison bundles into long format so that each bundle occupies its own row 
+      #         within a single component-bundle column. We then create new binary (1/0) presence indicators for each component. This ensures that all component bundles, regardless of whether 
+      #         they originally appeared on the intervention or comparison side of a contrast, contribute equally to the component co-occurrence and correlation analyses.
+      
+      #### Pivot long so that components given together on the "comparison" side of TvsT contrasts also get included in the correlations
     
-    CNMA_Data_c %>% count(intervention_component_bundle_oth_clean, comparison_component_bundle_clean) %>% print(n=Inf)
-    CNMA_Data_c_pivotlong_pre <- CNMA_Data_c %>% dplyr::select(study_id, contrast_id, intervention_component_bundle_oth_clean, comparison_component_bundle_clean) %>% 
-                                                 rename(intervention= intervention_component_bundle_oth_clean, comparison= comparison_component_bundle_clean)
-    print(CNMA_Data_c_pivotlong_pre)
-    CNMA_Data_c_pivotlong_post <- CNMA_Data_c_pivotlong_pre %>% pivot_longer(c(intervention, comparison), names_to= "component_bundle_clean", values_to= "component_bundle" )
-    print(CNMA_Data_c_pivotlong_post, n=Inf)
-    CNMA_Data_c_pivotlong_post %>% count(component_bundle) %>% print(n=Inf)
-    
-    #-> Create component binaries 
-    create_component_flag <- function(data, component, bundle_col = "component_bundle") {
-      data %>%
-        dplyr::mutate(
-          !!component :=
-            as.integer(
-              stringr::str_detect(
-                .data[[bundle_col]],
-                paste0("(^|\\.)", component, "(\\.|$)")
-              )
+        CNMA_Data_c %>% count(intervention_component_bundle_oth_clean, comparison_component_bundle_clean) %>% print(n=Inf)
+        CNMA_Data_c_pivotlong_pre <- CNMA_Data_c %>% dplyr::select(study_id, contrast_id, intervention_component_bundle_oth_clean, comparison_component_bundle_clean) %>% 
+          rename(intervention= intervention_component_bundle_oth_clean, comparison= comparison_component_bundle_clean)
+        print(CNMA_Data_c_pivotlong_pre)
+        CNMA_Data_c_pivotlong_post <- CNMA_Data_c_pivotlong_pre %>% pivot_longer(c(intervention, comparison), names_to= "component_bundle_clean", values_to= "component_bundle" )
+        print(CNMA_Data_c_pivotlong_post, n=Inf)
+        CNMA_Data_c_pivotlong_post %>% count(component_bundle) %>% print(n=Inf)
+        
+        #-> Create component binaries 
+        create_component_flag <- function(data, component, bundle_col = "component_bundle") {
+          data %>%
+            dplyr::mutate(
+              !!component :=
+                as.integer(
+                  stringr::str_detect(
+                    .data[[bundle_col]],
+                    paste0("(^|\\.)", component, "(\\.|$)")
+                  )
+                )
             )
+        }
+        
+        CNMA_Data_c_pivotlong_post <- create_component_flag (data = CNMA_Data_c_pivotlong_post, component = "NL")
+        CNMA_Data_c_pivotlong_post <- create_component_flag (data = CNMA_Data_c_pivotlong_post, component = "R")
+        CNMA_Data_c_pivotlong_post <- create_component_flag (data = CNMA_Data_c_pivotlong_post, component = "ME")
+        CNMA_Data_c_pivotlong_post <- create_component_flag (data = CNMA_Data_c_pivotlong_post, component = "VT")
+        CNMA_Data_c_pivotlong_post <- create_component_flag (data = CNMA_Data_c_pivotlong_post, component = "WTS")
+        CNMA_Data_c_pivotlong_post <- create_component_flag (data = CNMA_Data_c_pivotlong_post, component = "FF")
+        CNMA_Data_c_pivotlong_post <- create_component_flag (data = CNMA_Data_c_pivotlong_post, component = "WXA")
+        CNMA_Data_c_pivotlong_post <- create_component_flag (data = CNMA_Data_c_pivotlong_post, component = "MSS")
+        CNMA_Data_c_pivotlong_post <- create_component_flag (data = CNMA_Data_c_pivotlong_post, component = "BFS")
+        
+        CNMA_Data_c_pivotlong_post %>% count(component_bundle, NL, R, ME, VT, WTS, FF, WXA, MSS, BFS) %>% print(n=Inf)
+        print(CNMA_Data_c_pivotlong_post, n=Inf)
+    
+     #### Create heat map of component correaltions indicating how often two components are given together
+
+        #-> Create component labels
+        labdat <- data.frame(coding1 = c("NL", "R", "ME", "VT", "WTS", "FF", "WXA", "MSS", "BFS"))
+        labs <- c("NL", "R", "ME", "VT", "WTS", "FF", "WXA", "MSS", "BFS")
+        
+        #-> Generate object with data for plot - Which trial arms feature each component
+        datas <- vector("list",2)
+        for (i in 1:length(labdat$coding1)) {
+          x <- as.character(labdat$coding1[i])
+          lab <- as.character(labdat$coding1[i])
+          datas[[i]] <- rownames(subset(CNMA_Data_c_pivotlong_post, get(x) == 1))
+          names(datas)[i] <- lab
+          rm(x,lab,i)
+        }
+        
+        print(datas)
+        
+        #-> Check output in `datas` matches tabulations of each cmoponent
+        tabyl(CNMA_Data_c_pivotlong_post$NL)
+        tabyl(CNMA_Data_c_pivotlong_post$R)
+        tabyl(CNMA_Data_c_pivotlong_post$ME)
+        tabyl(CNMA_Data_c_pivotlong_post$VT)
+        tabyl(CNMA_Data_c_pivotlong_post$WTS)
+        tabyl(CNMA_Data_c_pivotlong_post$FF)
+        tabyl(CNMA_Data_c_pivotlong_post$WXA)
+        tabyl(CNMA_Data_c_pivotlong_post$MSS)
+        tabyl(CNMA_Data_c_pivotlong_post$BFS)
+        
+        #-> Reduce data down to component columns and add component labels
+        comp <- labdat$coding1
+        x <- CNMA_Data_c_pivotlong_post[,comp]
+        names(x) <- labs
+        
+        #-> compute phi-coefficients:
+        y <- cor(x)
+        
+        #-> create correlation plot:
+        corrplot(y, method = "color", type = "upper", diag = FALSE, 
+                 tl.cex = 1, tl.col = "black",
+                 number.cex = 1, number.font = 2, number.digits = 2,
+                 col=COL2("PRGn"), addCoef.col="black")
+        
+        #-> Compare output to raw data by tabulating the number of times each intervention bundle appears across both the "treatment" and "comparison" sides of all contrasts in the data
+        tabyl(CNMA_Data_c_pivotlong_post$component_bundle)
+        
+     #### Create heat map of the number of trial arms in which two components are both included.
+        
+        #-> Create component labels
+        labdat <- data.frame(coding1 = c("NL", "R", "ME", "VT", "WTS", "FF", "WXA", "MSS", "BFS"))
+        labs <- c("NL", "R", "ME", "VT", "WTS", "FF", "WXA", "MSS", "BFS")
+        
+        #   Generate object with data for plot - Which trial arms feature each component
+        datas <- vector("list",2)
+        for (i in 1:length(labdat$coding1)) {
+          x <- as.character(labdat$coding1[i])
+          lab <- as.character(labdat$coding1[i])
+          datas[[i]] <- rownames(subset(CNMA_Data_c_pivotlong_post, get(x) == 1))
+          names(datas)[i] <- lab
+          rm(x,lab,i)
+        }
+        
+        print(datas)
+        
+        #   Calculate number of components with each arm    
+        comp <- labdat$coding1
+        x <- CNMA_Data_c_pivotlong_post[,comp]
+        x$ncomps <- apply(x,1,sum)
+        
+        # Number of components
+        ncomps <- length(comp)
+        
+        # Set up empty matrix for matrix with number of pairs of component combinations
+        a <- matrix(nrow = ncomps, ncol = ncomps,
+                    dimnames = list(labs,labs))
+        
+        #   Fill in the matrix:
+        for (i in 1: ncomps){
+          r <- x[,comp[i]]
+          for (j in 1:ncomps){
+            c <- x[,comp[j]]
+            a[i,j] <- with(x, sum(r==1 & c==1))
+            rm(j,c)
+          }
+          rm(i,r)
+        }
+        
+        # Choose colour scale for heatmap
+        col_fun = colorRamp2(c(0, 30), c("white", "red"))
+        
+        # Create lower triangle of a heatmap
+        Heatmap(a,
+                name = "N arms with\ncombination\n",
+                col = col_fun,
+                cluster_rows = FALSE, 
+                cluster_columns = FALSE, 
+                row_names_side = "left", 
+                row_names_max_width = unit(10, "cm"),
+                row_names_gp = gpar(fontsize = 15),
+                column_names_side = "bottom",
+                column_names_max_height = unit(10, "cm"),
+                column_names_gp = gpar(fontsize = 15),
+                column_title_gp = gpar(fontsize = 16, fontface = "bold"),
+                rect_gp = gpar(type = "none"),        
+                cell_fun = function(j, i, x, y, w, h, fill){
+                  if( i>=j ){
+                    grid.rect(x, y, w, h, 
+                              gp = gpar(fill = fill, col = fill))
+                    grid.text(sprintf("%.0f", a[i, j]), 
+                              x, y, 
+                              gp = gpar(fontsize = 15))
+                  }        
+                }
         )
-    }
+        
+        #-> Compare output to raw data
+        tabyl(CNMA_Data_c_pivotlong_post$NL)
+        tabyl(CNMA_Data_c_pivotlong_post$R)
+        tabyl(CNMA_Data_c_pivotlong_post$ME)
+        tabyl(CNMA_Data_c_pivotlong_post$VT)
+        tabyl(CNMA_Data_c_pivotlong_post$WTS)
+        tabyl(CNMA_Data_c_pivotlong_post$FF)
+        tabyl(CNMA_Data_c_pivotlong_post$WXA)
+        tabyl(CNMA_Data_c_pivotlong_post$MSS)
+        tabyl(CNMA_Data_c_pivotlong_post$BFS)
+        
+        CNMA_Data_c_pivotlong_post %>% count(NL, R)
+        CNMA_Data_c_pivotlong_post %>% count(NL, ME)
+        CNMA_Data_c_pivotlong_post %>% count(FF, WTS)
+        CNMA_Data_c_pivotlong_post %>% count(MSS, VT)
     
-    CNMA_Data_c_pivotlong_post <- create_component_flag (data = CNMA_Data_c_pivotlong_post, component = "NL")
-    CNMA_Data_c_pivotlong_post <- create_component_flag (data = CNMA_Data_c_pivotlong_post, component = "R")
-    CNMA_Data_c_pivotlong_post <- create_component_flag (data = CNMA_Data_c_pivotlong_post, component = "ME")
-    CNMA_Data_c_pivotlong_post <- create_component_flag (data = CNMA_Data_c_pivotlong_post, component = "VT")
-    CNMA_Data_c_pivotlong_post <- create_component_flag (data = CNMA_Data_c_pivotlong_post, component = "WTS")
-    CNMA_Data_c_pivotlong_post <- create_component_flag (data = CNMA_Data_c_pivotlong_post, component = "FF")
-    CNMA_Data_c_pivotlong_post <- create_component_flag (data = CNMA_Data_c_pivotlong_post, component = "WXA")
-    CNMA_Data_c_pivotlong_post <- create_component_flag (data = CNMA_Data_c_pivotlong_post, component = "MSS")
-    CNMA_Data_c_pivotlong_post <- create_component_flag (data = CNMA_Data_c_pivotlong_post, component = "BFS")
+      #### Create UpSet plot
+        
+        #-> Convert CNMA data file for visualizations from tibble to data.fram
+        CNMA_Data_c_pivotlong_post_df <- as.data.frame(CNMA_Data_c_pivotlong_post)
+        CNMA_Data_c_pivotlong_post_df
+        
+        upset(CNMA_Data_c_pivotlong_post_df, nsets = 9, nintersects = NA, number.angles = 0, 
+              point.size = 2, 
+              line.size = 0.7, 
+              order.by = "freq",
+              matrix.color = "#1a5276",
+              main.bar.color = "#6c3483",
+              sets.bar.color = "#138d75",
+              set_size.show = TRUE,
+              mainbar.y.label = "No. of Trial Arms featuring combination",
+              sets.x.label = "No. of Trial Arms featuring component",
+              mainbar.y.max = 18,
+              text.scale = 1.15)
+        
+        #-> Compare output to raw data
+        tabyl(CNMA_Data_c_pivotlong_post_df$WXA)
+        tabyl(CNMA_Data_c_pivotlong_post_df$ME)
+        tabyl(CNMA_Data_c_pivotlong_post_df$NL)
+        tabyl(CNMA_Data_c_pivotlong_post_df$WTS)
+        tabyl(CNMA_Data_c_pivotlong_post_df$BFS)
+        tabyl(CNMA_Data_c_pivotlong_post_df$FF)
+        tabyl(CNMA_Data_c_pivotlong_post_df$MSS)
+        tabyl(CNMA_Data_c_pivotlong_post_df$VT)
+        tabyl(CNMA_Data_c_pivotlong_post_df$R)
+        
+        tabyl(CNMA_Data_c_pivotlong_post_df$component_bundle)
     
-    CNMA_Data_c_pivotlong_post %>% count(component_bundle, NL, R, ME, VT, WTS, FF, WXA, MSS, BFS) %>% print(n=Inf)
-    print(CNMA_Data_c_pivotlong_post, n=Inf)
-    
-    #CNMA_Data_c_pivotlong_post <- CNMA_Data_c_pivotlong_post %>% rename(MSS=MS2)
-    CNMA_Data_c_pivotlong_post %>% count(component_bundle, NL, R, ME, VT, WTS, FF, WXA, MSS, BFS) %>% print(n=Inf)
-    
-    #-> Create component labels
-    labdat <- data.frame(coding1 = c("NL", "R", "ME", "VT", "WTS", "FF", "WXA", "MSS", "BFS"))
-    labs <- c("NL", "R", "ME", "VT", "WTS", "FF", "WXA", "MSS", "BFS")
-    
-    #-> Generate object with data for plot - Which trial arms feature each component
-    datas <- vector("list",2)
-    for (i in 1:length(labdat$coding1)) {
-      x <- as.character(labdat$coding1[i])
-      lab <- as.character(labdat$coding1[i])
-      datas[[i]] <- rownames(subset(CNMA_Data_c_pivotlong_post, get(x) == 1))
-      names(datas)[i] <- lab
-      rm(x,lab,i)
-    }
-    
-    print(datas)
-    
-    #-> Check output in `datas` matches tabulations of each cmoponent
-    tabyl(CNMA_Data_c_pivotlong_post$NL)
-    tabyl(CNMA_Data_c_pivotlong_post$R)
-    tabyl(CNMA_Data_c_pivotlong_post$ME)
-    tabyl(CNMA_Data_c_pivotlong_post$VT)
-    tabyl(CNMA_Data_c_pivotlong_post$WTS)
-    tabyl(CNMA_Data_c_pivotlong_post$FF)
-    tabyl(CNMA_Data_c_pivotlong_post$WXA)
-    tabyl(CNMA_Data_c_pivotlong_post$MSS)
-    tabyl(CNMA_Data_c_pivotlong_post$BFS)
-    
-    #-> Reduce data down to component columns and add component labels
-    comp <- labdat$coding1
-    x <- CNMA_Data_c_pivotlong_post[,comp]
-    names(x) <- labs
-    
-    #-> compute phi-coefficients:
-    y <- cor(x)
-    
-    #-> create correlation plot:
-    corrplot(y, method = "color", type = "upper", diag = FALSE, 
-             tl.cex = 1, tl.col = "black",
-             number.cex = 1, number.font = 2, number.digits = 2,
-             col=COL2("PRGn"), addCoef.col="black")
-    
-    #-> Compare output to raw data by tabulating the number of times each intervention bundle appears across both the "treatment" and "comparison" sides of all contrasts in the data
-    tabyl(CNMA_Data_c_pivotlong_post$component_bundle)
-    
-    ### Create heat map of the number of trial arms in which two components are both included.
-    
-    #-> Create component labels
-    labdat <- data.frame(coding1 = c("NL", "R", "ME", "VT", "WTS", "FF", "WXA", "MSS", "BFS"))
-    labs <- c("NL", "R", "ME", "VT", "WTS", "FF", "WXA", "MSS", "BFS")
-    
-    #   Generate object with data for plot - Which trial arms feature each component
-    datas <- vector("list",2)
-    for (i in 1:length(labdat$coding1)) {
-      x <- as.character(labdat$coding1[i])
-      lab <- as.character(labdat$coding1[i])
-      datas[[i]] <- rownames(subset(CNMA_Data_c_pivotlong_post, get(x) == 1))
-      names(datas)[i] <- lab
-      rm(x,lab,i)
-    }
-    
-    print(datas)
-    
-    #   Calculate number of components with each arm    
-    comp <- labdat$coding1
-    x <- CNMA_Data_c_pivotlong_post[,comp]
-    x$ncomps <- apply(x,1,sum)
-    
-    # Number of components
-    ncomps <- length(comp)
-    
-    # Set up empty matrix for matrix with number of pairs of component combinations
-    a <- matrix(nrow = ncomps, ncol = ncomps,
-                dimnames = list(labs,labs))
-    
-    #   Fill in the matrix:
-    for (i in 1: ncomps){
-      r <- x[,comp[i]]
-      for (j in 1:ncomps){
-        c <- x[,comp[j]]
-        a[i,j] <- with(x, sum(r==1 & c==1))
-        rm(j,c)
-      }
-      rm(i,r)
-    }
-    
-    # Choose colour scale for heatmap
-    col_fun = colorRamp2(c(0, 30), c("white", "red"))
-    
-    # Create lower triangle of a heatmap
-    Heatmap(a,
-            name = "N arms with\ncombination\n",
-            col = col_fun,
-            cluster_rows = FALSE, 
-            cluster_columns = FALSE, 
-            row_names_side = "left", 
-            row_names_max_width = unit(10, "cm"),
-            row_names_gp = gpar(fontsize = 15),
-            column_names_side = "bottom",
-            column_names_max_height = unit(10, "cm"),
-            column_names_gp = gpar(fontsize = 15),
-            column_title_gp = gpar(fontsize = 16, fontface = "bold"),
-            rect_gp = gpar(type = "none"),        
-            cell_fun = function(j, i, x, y, w, h, fill){
-              if( i>=j ){
-                grid.rect(x, y, w, h, 
-                          gp = gpar(fill = fill, col = fill))
-                grid.text(sprintf("%.0f", a[i, j]), 
-                          x, y, 
-                          gp = gpar(fontsize = 15))
-              }        
-            }
-    )
-    
-    #-> Compare output to raw data
-    tabyl(CNMA_Data_c_pivotlong_post$NL)
-    tabyl(CNMA_Data_c_pivotlong_post$R)
-    tabyl(CNMA_Data_c_pivotlong_post$ME)
-    tabyl(CNMA_Data_c_pivotlong_post$VT)
-    tabyl(CNMA_Data_c_pivotlong_post$WTS)
-    tabyl(CNMA_Data_c_pivotlong_post$FF)
-    tabyl(CNMA_Data_c_pivotlong_post$WXA)
-    tabyl(CNMA_Data_c_pivotlong_post$MSS)
-    tabyl(CNMA_Data_c_pivotlong_post$BFS)
-    
-    CNMA_Data_c_pivotlong_post %>% count(NL, R)
-    CNMA_Data_c_pivotlong_post %>% count(NL, ME)
-    CNMA_Data_c_pivotlong_post %>% count(FF, WTS)
-    CNMA_Data_c_pivotlong_post %>% count(MSS, VT)
      
   #################################### NO MIRRORED CONTRASTS ####################################
   
