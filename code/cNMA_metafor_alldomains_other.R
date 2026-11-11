@@ -409,7 +409,7 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
     V_list_cnma <- vcalc(variance, cluster= study_id, obs= es_id, rho=0.6, grp1=intervention_component_bundle, grp2=comparison_component_bundle, w1=intervention_n, w2=comparison_n, data=CNMA_Data)
     V_list_cnma    
     V_list_cnma <- data.frame(V_list_cnma)
-    write_csv(V_list_cnma, 'V_list_cnma.csv')
+    write_csv(V_list_cnma, file = "output/V_list_cnma.csv")
     
   ## Run additive cNMA with the unique intervention components as moderators  
     
@@ -463,8 +463,7 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
     lt_info_df3 <- lt_info_df2 %>% pivot_wider(id_cols= "comp1", names_from= "comp2", values_from = "pred_cis") #This creates the league table formatted as "left vs top".
     lt_info_df3 <- rename(lt_info_df3, Intervention = comp1)
     print(lt_info_df3)
-    write_csv(lt_info_df3, file = "cnma_league_table.csv")
-    #write_xlsx(lt_info_df3, 'cnma_league_table.xlsx')
+    write_csv(lt_info_df3, file = "output/cnma_league_table.csv")
     
     ### Review component correlations
     res_mod_cnma_model_matrix <- model.matrix(res_mod_cnma)
@@ -714,8 +713,8 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
     V_list_cnma_nomirrors <- vcalc(variance, cluster= study_id, obs= es_id, rho=0.6, grp1=intervention_component_bundle, grp2=comparison_component_bundle, w1=intervention_n, w2=comparison_n, data=CNMA_Data_nomirrors)
     V_list_cnma_nomirrors    
     V_list_cnma_nomirrors <- data.frame(V_list_cnma_nomirrors)
-    write_csv(V_list_cnma_nomirrors, 'V_list_cnma_nomirrors.csv')
-        
+    write_csv(V_list_cnma_nomirrors, file = "output/V_list_cnma_nomirrors.csv")
+
   ## Run additive cNMA with the unique intervention components as moderators  
 
     ### Fit additive CNMA model
@@ -756,8 +755,7 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
     lt_info_df3 <- lt_info_df2 %>% pivot_wider(id_cols= "comp1", names_from= "comp2", values_from = "pred_cis") #This creates the league table formatted as "left vs top".
     lt_info_df3 <- rename(lt_info_df3, Intervention = comp1)
     print(lt_info_df3)
-    write_csv(lt_info_df3, file = "cnma_league_table_nomirrors.csv")
-    #write_xlsx(lt_info_df3, 'cnma_league_table_nomirrors.xlsx')
+    write_csv(lt_info_df3, file = "output/cnma_league_table_nomirrors.csv")
     
     
 #================================================================= NMA =================================================================#    
@@ -850,8 +848,7 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
     lt_info_df3 <- lt_info_df2 %>% pivot_wider(id_cols= "comp1", names_from= "comp2", values_from = "pred_cis") #This creates the league table formatted as "left vs top".
     lt_info_df3 <- rename(lt_info_df3, Intervention = comp1)
     print(lt_info_df3)
-    write_csv(lt_info_df3, file = "nma_league_table.csv")
-    #write_xlsx(lt_info_df3, 'nma_league_table.xlsx')
+    write_csv(lt_info_df3, file = "output/nma_league_table.csv")
     
     ### Compute p-values
     contr <- data.frame(t(combn(c(names(coef(res_mod_nma)),"BAU"), 2))) # add "BAU" to contrast matrix / Likely to remove this from output/forest plot
@@ -1004,8 +1001,7 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
     lt_info_df3 <- lt_info_df2 %>% pivot_wider(id_cols= "comp1", names_from= "comp2", values_from = "pred_cis") #This creates the league table formatted as "left vs top".
     lt_info_df3 <- rename(lt_info_df3, Intervention = comp1)
     print(lt_info_df3)
-    write_csv(lt_info_df3, file = "nma_league_table_nomirrors.csv")
-    #write_xlsx(lt_info_df3, 'nma_league_table_nomirrors.xlsx')
+    write_csv(lt_info_df3, file = "output/nma_league_table_nomirrors.csv")
     
     ### Compute p-values
     contr <- data.frame(t(combn(c(names(coef(res_mod_nomirrors_nma)),"BAU"), 2))) # add "BAU" to contrast matrix / Likely to remove this from output/forest plot
