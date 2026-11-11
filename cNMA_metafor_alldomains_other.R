@@ -426,14 +426,14 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
       summary(res_mod_cnma) 
       
       #### CNMA without "Other" component included for mirrored contrasts
-      # res_mod_cnma_nooth <- rma.mv(effect_size, V_list_cnma,
-      #                            # mods = ~ NL + N + R + RV + ME + VT + WTS + SV + FF + FO + BR + MR + PREXTRA + BX + WXA + WXP + MSS + WPS + WP2 + BFS - 1, # Full list of available contrast-coded components for reference.
-      #                            # mods = ~ NL + R + ME + VT + WTS + FF + BR + MR + WXA + MSS + BFS - 1, # Original shortlist of components for inlcudion in CNMA for reference.
-      #                            mods = ~ NL + R + ME + VT + WTS + FF + WXA + MSS + BFS - 1, # BAU is excluded to serve as the reference level for the comparisons.
-      #                            random = ~ 1 | study_id/contrast_id/es_id,
-      #                            rho=0.60,
-      #                            data=CNMA_Data)
-      # summary(res_mod_cnma_nooth)
+      res_mod_cnma_nooth <- rma.mv(effect_size, V_list_cnma,
+                                 # mods = ~ NL + N + R + RV + ME + VT + WTS + SV + FF + FO + BR + MR + PREXTRA + BX + WXA + WXP + MSS + WPS + WP2 + BFS - 1, # Full list of available contrast-coded components for reference.
+                                 # mods = ~ NL + R + ME + VT + WTS + FF + BR + MR + WXA + MSS + BFS - 1, # Original shortlist of components for inlcudion in CNMA for reference.
+                                 mods = ~ NL + R + ME + VT + WTS + FF + WXA + MSS + BFS - 1, # BAU is excluded to serve as the reference level for the comparisons.
+                                 random = ~ 1 | study_id/contrast_id/es_id,
+                                 rho=0.60,
+                                 data=CNMA_Data)
+      summary(res_mod_cnma_nooth)
     
     ### Estimate all pairwise differences between treatments
     contr <- data.frame(t(combn(names(coef(res_mod_cnma)), 2)))
@@ -470,6 +470,10 @@ CNMA_Data <- read_sheet("https://docs.google.com/spreadsheets/d/1oCcRHU6OSc64OWV
     res_mod_cnma_model_matrix <- model.matrix(res_mod_cnma)
     cor(res_mod_cnma_model_matrix)
     corrplot::corrplot(cor(res_mod_cnma_model_matrix))
+    
+    res_mod_cnma_nooth_model_matrix <- model.matrix(res_mod_cnma_nooth)
+    cor(res_mod_cnma_nooth_model_matrix)
+    corrplot::corrplot(cor(res_mod_cnma_nooth_model_matrix))
     
     ### Create CNMA Visualizations
     
